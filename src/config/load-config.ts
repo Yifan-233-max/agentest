@@ -1,23 +1,90 @@
 import path from 'node:path';
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { glob } from 'tinyglobby';
 import type { AgentestConfig } from '../types.js';
 
-export const DEFAULT_TEST_PATTERNS = ['tests/**/*.agent.test.{js,mjs,ts}'];
+export const DEFAULT_TEST_PATTERNS = [
+  'tests/**/*.agent.test.{js,mjs,ts}',
+  '**/*.agent.test.{js,mjs,ts}',
+];
+
+const DEFAULT_TEST_IGNORE = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/.git/**',
+];
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
 export interface ConfigResolutionResult {
-  configPath?: string;
+  configReference?: ResolvedConfigReference;
   error?: Error;
 }
 
-export async function resolveConfigPath(explicitPath?: string): Promise<string> {
+export interface ResolvedConfigReference {
+  kind: 'file' | 'package-json-inline';
+  configPath: string;
+  projectRoot: string;
+  filePath?: string;
+  packageJsonPath?: string;
+}
+
+interface PackageJsonWithAgentest {
+  agentest?: AgentestConfig | string;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function asFileReference(filePath: string): ResolvedConfigReference {
+  return {
+    kind: 'file',
+    configPath: filePath,
+    projectRoot: path.dirname(filePath),
+    filePath,
+  };
+}
+
+async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWithAgentest> {
+  return JSON.parse(await readFile(packageJsonPath, 'utf8')) as PackageJsonWithAgentest;
+}
+
+async function resolvePackageJsonConfig(packageJsonPath: string): Promise<ResolvedConfigReference | undefined> {
+  const packageJson = await readPackageJson(packageJsonPath);
+
+  if (typeof packageJson.agentest === 'string') {
+    return asFileReference(path.resolve(path.dirname(packageJsonPath), packageJson.agentest));
+  }
+
+  if (isPlainObject(packageJson.agentest)) {
+    return {
+      kind: 'package-json-inline',
+      configPath: `${packageJsonPath}#agentest`,
+      projectRoot: path.dirname(packageJsonPath),
+      packageJsonPath,
+    };
+  }
+
+  return undefined;
+}
+
+export async function resolveConfigReference(explicitPath?: string): Promise<ResolvedConfigReference> {
   if (explicitPath) {
-    return path.resolve(process.cwd(), explicitPath);
+    const resolvedPath = path.resolve(process.cwd(), explicitPath);
+    if (path.basename(resolvedPath) === 'package.json') {
+      const packageJsonReference = await resolvePackageJsonConfig(resolvedPath);
+      if (packageJsonReference) {
+        return packageJsonReference;
+      }
+
+      throw new Error(`No "agentest" config was found in ${resolvedPath}.`);
+    }
+
+    return asFileReference(resolvedPath);
   }
 
   const candidates = [
@@ -29,19 +96,30 @@ export async function resolveConfigPath(explicitPath?: string): Promise<string> 
   for (const candidate of candidates) {
     try {
       await access(candidate);
-      return candidate;
+      return asFileReference(candidate);
     } catch {
       continue;
     }
   }
 
-  throw new Error('Unable to find an agentest config file. Pass one with --config.');
+  const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+  try {
+    await access(packageJsonPath);
+    const packageJsonReference = await resolvePackageJsonConfig(packageJsonPath);
+    if (packageJsonReference) {
+      return packageJsonReference;
+    }
+  } catch {
+    // Ignore missing package.json during config discovery.
+  }
+
+  throw new Error('Unable to find an agentest config. Add agentest.config.* or package.json#agentest, or pass one with --config.');
 }
 
 export async function tryResolveConfigPath(explicitPath?: string): Promise<ConfigResolutionResult> {
   try {
     return {
-      configPath: await resolveConfigPath(explicitPath),
+      configReference: await resolveConfigReference(explicitPath),
     };
   } catch (error) {
     return {
@@ -65,13 +143,38 @@ export async function importDefaultModule<T>(filePath: string): Promise<T> {
   }
 }
 
-export async function loadConfig(configPath: string): Promise<AgentestConfig> {
-  const config = await importDefaultModule<AgentestConfig>(configPath);
-  if (!config?.agent || !Array.isArray(config?.tools)) {
+export async function resolveConfigPath(explicitPath?: string): Promise<string> {
+  return (await resolveConfigReference(explicitPath)).configPath;
+}
+
+function validateConfig(config: unknown, configPath: string): AgentestConfig {
+  if (!isPlainObject(config) || !config.agent || !Array.isArray(config.tools)) {
     throw new Error(`Invalid agentest config at ${configPath}.`);
   }
 
-  return config;
+  return config as unknown as AgentestConfig;
+}
+
+export async function loadConfig(configSource: string | ResolvedConfigReference): Promise<AgentestConfig> {
+  const configReference = typeof configSource === 'string'
+    ? asFileReference(configSource)
+    : configSource;
+
+  if (configReference.kind === 'package-json-inline') {
+    if (!configReference.packageJsonPath) {
+      throw new Error(`Invalid package.json config reference: ${configReference.configPath}.`);
+    }
+
+    const packageJson = await readPackageJson(configReference.packageJsonPath);
+    return validateConfig(packageJson.agentest, configReference.configPath);
+  }
+
+  if (!configReference.filePath) {
+    throw new Error(`Invalid file config reference: ${configReference.configPath}.`);
+  }
+
+  const config = await importDefaultModule<AgentestConfig>(configReference.filePath);
+  return validateConfig(config, configReference.configPath);
 }
 
 export async function discoverTestFiles(
@@ -83,6 +186,7 @@ export async function discoverTestFiles(
   const files = await glob(configuredPatterns, {
     cwd: projectRoot,
     absolute: true,
+    ignore: DEFAULT_TEST_IGNORE,
   });
 
   return [...new Set(files)].sort();

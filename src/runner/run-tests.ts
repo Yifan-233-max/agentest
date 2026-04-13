@@ -1,10 +1,9 @@
-import path from 'node:path';
 import { AgentTestContext } from './test-context.js';
 import {
   discoverTestFiles,
   importDefaultModule,
   loadConfig,
-  resolveConfigPath,
+  resolveConfigReference,
 } from '../config/load-config.js';
 import type { AgentTestDefinition } from '../api.js';
 import type { AgentestConfig } from '../types.js';
@@ -98,9 +97,9 @@ function printSummary(summary: SuiteSummary): void {
 }
 
 export async function run(options: RunCliOptions = {}): Promise<SuiteSummary> {
-  const configPath = await resolveConfigPath(options.configPath);
-  const config = await loadConfig(configPath);
-  const projectRoot = path.dirname(configPath);
+  const configReference = await resolveConfigReference(options.configPath);
+  const config = await loadConfig(configReference);
+  const projectRoot = configReference.projectRoot;
   const files = await discoverTestFiles(projectRoot, config, options.patterns ?? []);
 
   if (files.length === 0) {
@@ -122,7 +121,7 @@ export async function run(options: RunCliOptions = {}): Promise<SuiteSummary> {
   }
 
   const suiteSummary: SuiteSummary = {
-    configPath,
+    configPath: configReference.configPath,
     total: summaries.length,
     passed: summaries.filter((item) => item.passed).length,
     failed: summaries.filter((item) => !item.passed).length,

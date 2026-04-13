@@ -10,6 +10,7 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "agentest": "./examples/simple/agentest.config.mjs",
   "files": [
     "dist"
   ],
@@ -17,6 +18,7 @@
     "build": "tsc -p tsconfig.json",
     "doctor:example": "npm run build && node ./dist/cli.js doctor --config ./examples/simple/agentest.config.mjs",
     "init:example": "npm run build && node ./dist/cli.js init --cwd ./examples/simple",
+    "run:embedded": "npm run build && node ./dist/cli.js run",
     "run:example": "npm run build && node ./dist/cli.js run --config ./examples/simple/agentest.config.mjs",
     "run:claude:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/claude.config.mjs",
     "run:copilot:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/copilot.config.mjs",

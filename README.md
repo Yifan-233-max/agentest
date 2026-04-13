@@ -44,10 +44,10 @@ Implemented now:
 
 - `defineConfig(...)` for project-level test configuration
 - `agentTest(...)` for writing test cases
+- config discovery from `agentest.config.*` or `package.json#agentest`
 - mocked MCP server over stdio
-- early project bootstrap with `agentest init`
 - session runner with `agentest run`
-- early health checks with `agentest doctor`
+- optional helper commands: early `agentest init` and `agentest doctor`
 - agent presets for `custom`, `claude`, and `copilot`
 - assertions for tool calls, tool sequence, counts, stdout, stderr, exit code, timeout, and unmatched calls
 - a minimal runnable example
@@ -60,14 +60,29 @@ Not implemented yet:
 - rich reporters
 - vendor-specific deep integrations
 
+## Embedded Adoption
+
+The primary adoption path is library-first.
+You add `agentest` to an existing prompt-driven repository, point it at your current prompt sources, add a small number of tests, and run them in the same repo.
+
+The intended minimal user flow is:
+
+1. install `agentest`
+2. add `package.json#agentest` or `agentest.config.mjs`
+3. write tests near the existing project
+4. run `agentest run`
+
+The helper commands such as `init`, `connect`, `create`, `explain`, and `doctor` are optional accelerators.
+They should not be the only way to onboard.
+
 ## Quick Start
 
-Clone the repo, install dependencies, and run the included example:
+In this repository, the thinnest entrypoint is now `package.json#agentest`, so you can run the example without passing `--config`:
 
 ```bash
 npm install
 npm run check
-npm run run:example
+npm run run:embedded
 ```
 
 Expected result:
@@ -78,7 +93,44 @@ PASS uses mocked MCP tools to validate a null-safe fix workflow (1/1, need 100%)
 1 passed, 0 failed, 1 total
 ```
 
-The runnable example lives in [examples/simple/agentest.config.mjs](examples/simple/agentest.config.mjs), [examples/simple/tests/fix-null.agent.test.mjs](examples/simple/tests/fix-null.agent.test.mjs), and [examples/simple/fake-agent.mjs](examples/simple/fake-agent.mjs).
+The runnable example is resolved from `package.json#agentest` and points at [examples/simple/agentest.config.mjs](examples/simple/agentest.config.mjs), [examples/simple/tests/fix-null.agent.test.mjs](examples/simple/tests/fix-null.agent.test.mjs), and [examples/simple/fake-agent.mjs](examples/simple/fake-agent.mjs).
+
+In a real prompt-driven project, the equivalent setup is:
+
+```bash
+npm i -D agentest
+```
+
+```json
+{
+  "scripts": {
+    "test:prompts": "agentest run"
+  },
+  "agentest": "./agentest.config.mjs"
+}
+```
+
+Then add `agentest.config.mjs` and a small number of prompt tests in your existing repo.
+
+## Config Sources
+
+`agentest run` currently resolves config in this order:
+
+1. `--config <path>`
+2. `agentest.config.mjs`, `agentest.config.js`, or `agentest.config.ts`
+3. `package.json#agentest`
+
+`package.json#agentest` can be:
+
+- a string path to a config file
+- an inline JSON config object for simpler cases
+
+Default JS test discovery is now intentionally repo-friendly:
+
+- `tests/**/*.agent.test.{js,mjs,ts}`
+- `**/*.agent.test.{js,mjs,ts}`
+
+That lets teams colocate tests with prompt modules instead of forcing a separate test workspace.
 
 ## Real CLI E2E Examples
 
@@ -163,6 +215,12 @@ Run it with:
 agentest run --config ./agentest.config.mjs
 ```
 
+Or, if you point `package.json#agentest` at that file:
+
+```bash
+agentest run
+```
+
 ## Agent Presets
 
 ### `custom`
@@ -231,10 +289,16 @@ Regular expressions also work directly in matchers.
 
 ## Project Direction
 
-The goal of this repository is not to ship a perfect framework on day one.
-The goal is to make the concept concrete, usable, and easy for the community to extend.
+The primary roadmap is now embedded adoption, not a mandatory new workflow.
 
-The next public product surface is planned around six customer-facing commands:
+That means the highest-priority path is:
+
+1. install `agentest` inside an existing prompt-driven repo
+2. point `agentest run` at the repo through `package.json#agentest` or `agentest.config.*`
+3. bind tests to real prompt sources instead of duplicating prompt text
+4. keep helper commands optional
+
+The product-layer commands still matter, but they are now secondary to the embedded path:
 
 - `agentest init`
 - `agentest connect <agent>`
@@ -243,16 +307,15 @@ The next public product surface is planned around six customer-facing commands:
 - `agentest explain`
 - `agentest doctor`
 
-These commands are the next design target, not the current fully-implemented CLI surface.
-`agentest init` and `agentest doctor` are the first commands from that product layer to be implemented in preview form.
 The product workflow spec is in [docs/product-api.md](docs/product-api.md), and the first structured prompt test format is in [docs/prompt-test-spec-v0.1.md](docs/prompt-test-spec-v0.1.md).
 
-The next steps are straightforward:
+The next implementation priorities are:
 
-1. add sandbox mode for controlled real-tool execution
-2. expand reporters and CI ergonomics
-3. add replay and trace inspection
-4. harden vendor presets and real-world examples
+1. support YAML prompt contract specs directly in `run`
+2. keep config and test assets thin enough for existing repos
+3. expand reporters and CI ergonomics
+4. add replay and trace inspection
+5. harden vendor presets and real-world examples
 
 ## License
 

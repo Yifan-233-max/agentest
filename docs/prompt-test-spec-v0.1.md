@@ -12,14 +12,26 @@ It should be the stable storage format for customer-authored prompt contract tes
 - easy to generate from natural language
 - easy to map onto the current runner and assertion engine
 - points to the real prompt source instead of duplicating prompt content when possible
+- fits naturally inside an existing prompt-driven repository
 
 ## File Location
 
-Generated specs should live under:
+Generated specs may live under:
 
 ```text
 .agentest/tests/*.agentest.yaml
 ```
+
+But the embedded path should also support standard repository locations such as:
+
+```text
+tests/**/*.agentest.yaml
+src/**/tests/*.agentest.yaml
+src/prompts/**/*.agentest.yaml
+```
+
+The important rule is not the directory name.
+The important rule is that specs can stay close to the project they validate.
 
 ## Example
 

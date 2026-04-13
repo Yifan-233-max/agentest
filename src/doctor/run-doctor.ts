@@ -275,7 +275,7 @@ export async function doctor(options: DoctorCliOptions = {}): Promise<DoctorRepo
   });
 
   const configResolution = await tryResolveConfigPath(options.configPath);
-  let configPath = configResolution.configPath;
+  let configPath = configResolution.configReference?.configPath;
   let config: AgentestConfig | undefined;
   let projectRoot: string | undefined;
 
@@ -290,13 +290,13 @@ export async function doctor(options: DoctorCliOptions = {}): Promise<DoctorRepo
     pushCheck(checks, {
       id: 'config-file',
       status: 'pass',
-      summary: 'Agentest config file found',
+      summary: 'Agentest config found',
       details: configPath,
     });
 
     try {
-      config = await loadConfig(configPath);
-      projectRoot = path.dirname(configPath);
+      config = await loadConfig(configResolution.configReference!);
+      projectRoot = configResolution.configReference!.projectRoot;
       pushCheck(checks, {
         id: 'config-load',
         status: 'pass',
