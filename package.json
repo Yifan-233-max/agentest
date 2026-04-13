@@ -1,0 +1,42 @@
+{
+  "name": "agentest",
+  "version": "0.0.1",
+  "description": "A unit test framework for AI CLI workflows using mocked MCP tools.",
+  "type": "module",
+  "bin": {
+    "agentest": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "doctor:example": "npm run build && node ./dist/cli.js doctor --config ./examples/simple/agentest.config.mjs",
+    "init:example": "npm run build && node ./dist/cli.js init --cwd ./examples/simple",
+    "run:example": "npm run build && node ./dist/cli.js run --config ./examples/simple/agentest.config.mjs",
+    "run:claude:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/claude.config.mjs",
+    "run:copilot:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/copilot.config.mjs",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "agent",
+    "testing",
+    "mcp",
+    "cli",
+    "llm"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "tinyglobby": "^0.2.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}
