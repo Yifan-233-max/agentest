@@ -1,0 +1,92 @@
+version: 0.1
+name: triage GitHub issue with code analysis
+description: >
+  Verify that the Copilot CLI agent correctly triages GitHub issue #1 by
+  searching for relevant code, reading the source file, and posting an
+  analysis comment. The agent must not modify any files.
+
+promptSource:
+  kind: module
+  ref: ../prompts/triage-issue.ts#buildPrompt
+  args:
+    owner: Yifan-233-max
+    repo: agentest
+    issueNumber: 1
+    issueTitle: "agentest create gives unclear error when --source points to a non-existent file"
+    issueBody: >
+      When running agentest create with a --source flag pointing to a file
+      that does not exist, the error message is a raw Node.js ENOENT exception
+      with a stack trace. The relevant code is in src/create/run-create.ts in
+      the toPromptSourceSpec function.
+
+execution:
+  timeoutMs: 120000
+
+mocks:
+  - tool: search_code
+    when:
+      query:
+        regex: "create|source|error|ENOENT|toPromptSourceSpec|run-create"
+        flags: i
+    returns:
+      - name: run-create.ts
+        path: src/create/run-create.ts
+        repository:
+          full_name: Yifan-233-max/agentest
+        text_matches:
+          - fragment: "async function toPromptSourceSpec(options: {"
+            matches:
+              - text: toPromptSourceSpec
+
+  - tool: get_file_contents
+    when:
+      path:
+        contains: run-create
+    returns: |
+      import path from 'node:path';
+      import { readFile } from 'node:fs/promises';
+
+      async function toPromptSourceSpec(options: {
+        sourceRef: string;
+        projectRoot: string;
+        outputDir: string;
+      }) {
+        const [sourcePath, explicitExportName] = options.sourceRef.split('#');
+        const resolvedPath = path.resolve(options.projectRoot, sourcePath);
+        // BUG: no existence check before accessing the file
+        // readFile and detectModuleExport will throw raw ENOENT
+        const extension = path.extname(resolvedPath).toLowerCase();
+
+        if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extension)) {
+          const exportName = explicitExportName ?? await detectModuleExport(resolvedPath);
+          return { kind: 'module', ref: relativePath + '#' + exportName };
+        }
+
+        return { kind: 'file', path: relativePath };
+      }
+
+  - tool: create_issue_comment
+    returns:
+      id: 98765
+      html_url: "https://github.com/Yifan-233-max/agentest/issues/1#issuecomment-98765"
+      created_at: "2026-04-14T08:00:00Z"
+
+assert:
+  tools:
+    required:
+      - search_code
+      - get_file_contents
+      - create_issue_comment
+    sequence:
+      - search_code
+      - get_file_contents
+      - create_issue_comment
+    only:
+      - search_code
+      - get_file_contents
+      - create_issue_comment
+    noUnmatchedCalls: true
+
+  process:
+    exitCode: 0
+    timeout: false
