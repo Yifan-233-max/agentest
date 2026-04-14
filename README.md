@@ -64,6 +64,30 @@ Not implemented yet:
 - rich reporters
 - vendor-specific deep integrations
 
+## Target AI-Native UX
+
+The runtime is already good enough to execute generated YAML or JS specs.
+The next product step should not force users to start from a blank schema file.
+
+The intended customer path is:
+
+```bash
+npm i -D agentest
+npx agentest create "Test the checkout fix workflow"
+npx agentest flow tests/checkout-fix.agentest.yaml
+npx agentest run --chaos light
+npx agentest explain --latest
+```
+
+That flow means:
+
+- generate the first test from natural language and packaged skills
+- review the test as a readable flow graph before execution
+- run baseline and chaos validation
+- inspect where the model + agent drifts under perturbation
+
+The detailed product-direction doc is in [docs/ai-native-experience.md](docs/ai-native-experience.md), and the command surface draft is in [docs/product-api.md](docs/product-api.md).
+
 ## Use In Your Project
 
 The primary adoption path is library-first.
@@ -145,6 +169,9 @@ npx agentest run
 ```
 
 The full step-by-step guide is in [docs/usage.md](docs/usage.md), and the smallest copy-paste template is in [docs/minimal-template.md](docs/minimal-template.md).
+
+Today, the most practical path is still to write or review YAML directly.
+But the intended product UX is to generate that first draft from natural language, then review it through a flow view instead of starting from a blank test file.
 
 The helper commands such as `init`, `connect`, `create`, `explain`, and `doctor` are optional accelerators.
 They should not be the only way to onboard.

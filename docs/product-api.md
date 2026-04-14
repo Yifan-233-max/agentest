@@ -2,229 +2,120 @@
 
 Status: draft
 
-This document defines the optional product surface around agentest.
-The current repository already implements the execution engine and the `run` command for JS-based tests.
-The commands below should accelerate adoption, but they should not replace the embedded library-first path.
+This document defines the intended optional product surface around agentest.
+
+The execution engine is already capable of running prompt contract tests.
+The next product layer should optimize for an AI-native customer experience:
+
+1. generate tests from natural language and packaged skills
+2. visualize the generated flow before execution
+3. run baseline and chaos evaluation
+4. explain drift in model + agent behavior
+
+The engine remains library-friendly and reviewable.
+The product layer exists to reduce authoring friction and make test behavior legible.
 
 ## Product Boundary
 
 agentest should have three layers:
 
 - engine layer: mock MCP server, runner, assertions, presets, traces
-- embedded adoption layer: config discovery, prompt source binding, colocated tests, `run`
-- helper product layer: `init`, `connect`, `create`, `explain`, `doctor`
+- embedded layer: config discovery, prompt binding, colocated specs, `run`
+- product layer: `create`, `flow`, `run --chaos`, `explain`, `doctor`, optional `init`
 
-The engine remains library-friendly.
-The embedded adoption layer is the primary customer entrypoint.
-The helper product layer reduces friction, but it must stay optional.
+The embedded layer makes the system executable inside a normal repository.
+The product layer makes it usable in an AI-first workflow.
 
-## User Journey
+## Experience Principles
 
-The primary customer journey should be:
+- natural language first, schema second
+- generated artifacts must remain reviewable in git
+- users should understand the flow before they execute it
+- chaos and stability must be first-class outcomes
+- hand-written YAML or JS remains an escape hatch, not the primary product story
 
-1. Install agentest in an existing prompt-as-code project.
-2. Add `package.json#agentest` or `agentest.config.*`.
-3. Point tests at existing prompt sources instead of copying prompt text.
-4. Run `agentest run` locally or in CI.
+## Primary User Journey
 
-The helper workflow is secondary:
+The desired mainstream journey is:
 
-1. Run `agentest init` so the project is discovered automatically.
-2. Run `agentest connect claude` or `agentest connect copilot` to bind a real agent runtime.
-3. Run `agentest create` to turn a natural-language testing intent into a prompt contract test.
-4. Run `agentest explain` when a test fails or drifts.
-5. Run `agentest doctor` if the environment or connector is unhealthy.
+1. Install `agentest` in an existing prompt-driven repository.
+2. Use `agentest create` with natural language to generate a test spec from project context and packaged skills.
+3. Use `agentest flow` to review the generated test as a graph.
+4. Use `agentest run --chaos <profile>` to evaluate baseline and perturbed execution.
+5. Use `agentest explain` to understand drift and decide whether to update the prompt or the contract.
 
-The public API should preserve both paths.
-The embedded path owns the default mental model.
+The lower-level manual path still exists:
 
-## Shared Conventions
+1. write or edit YAML or JS specs directly
+2. run `agentest run`
 
-The helper workflow may standardize on these workspace artifacts:
+That path should continue to work, but it should no longer define the product narrative.
+
+## Shared Workspace Artifacts
+
+The helper workflow may standardize on these artifacts:
 
 ```text
 .agentest/
-  config.json
   cache/
     project-map.json
-  tests/
-    release-note.agentest.yaml
-  traces/
-    latest/
   skills/
-    claude.md
-    copilot.md
+    default/
+      authoring.md
+      flow-review.md
+      chaos-review.md
+  flows/
+    checkout-fix.mmd
+  reports/
+    latest/
+      summary.json
+      chaos.json
+      trace.json
+tests/
+  checkout-fix.agentest.yaml
 ```
 
 Rules:
 
-- `.agentest/config.json` is helper-generated config, not the only valid config source.
-- `.agentest/tests/*.agentest.yaml` are helper-generated prompt contract specs.
-- `.agentest/cache/project-map.json` stores scan results so later commands do not need to rediscover the whole repo.
-- `.agentest/traces/latest/` stores the latest execution artifacts for `explain`.
-- `.agentest/skills/` stores generated prompt/skill content for supported agent CLIs.
-
-The embedded path should also support:
-
-- `package.json#agentest`
-- `agentest.config.*`
-- test files under standard repo locations such as `tests/**` or colocated prompt directories
-
-`agentest run` should remain backward compatible with the current JS test engine while gaining support for YAML specs.
+- `tests/*.agentest.yaml` or `*.agent.test.ts` remain the primary reviewable assets
+- `.agentest/skills/` stores packaged or generated authoring skills
+- `.agentest/cache/project-map.json` stores scan results and inferred prompt/tool metadata
+- `.agentest/flows/*.mmd` stores flow diagrams when the user wants an artifact on disk
+- `.agentest/reports/latest/` stores baseline and chaos summaries used by `explain`
 
 ## Exit Codes
 
 All product commands should follow the same exit contract:
 
 - `0`: success
-- `1`: user-visible failure, such as failing tests or a rejected command precondition
+- `1`: user-visible failure, such as failing tests or rejected intent
 - `2`: environment or configuration problem
 - `3`: internal agentest error
 
 ## Command Contract
 
-### `agentest init`
-
-Purpose:
-Bootstrap agentest inside an existing repository without requiring the user to understand MCP injection or the underlying JS DSL.
-
-Positioning:
-Optional helper command, not a required first step.
-
-Primary responsibilities:
-
-- detect prompt sources
-- detect existing MCP configuration
-- detect available agent runtimes
-- create `.agentest/` workspace files
-- recommend the next command
-
-Inputs:
-
-- optional workspace path
-- optional preferred agent preset: `claude`, `copilot`, or `auto`
-- non-interactive mode for CI or scripted setup
-
-Suggested flags:
-
-- `--cwd <path>`
-- `--agent <claude|copilot|auto>`
-- `--yes`
-- `--format <human|json>`
-
-Side effects:
-
-- creates `.agentest/config.json`
-- creates `.agentest/tests/`
-- writes `.agentest/cache/project-map.json`
-
-Success output should answer:
-
-- which prompt sources were found
-- which agent runtimes were detected
-- which preset was recommended
-- what the next command should be
-
-Example:
-
-```bash
-npx agentest init
-```
-
-Expected summary shape:
-
-```text
-Detected 3 prompt sources.
-Detected Claude Code.
-Recommended preset: claude.
-Created .agentest/config.json.
-Next step: npx agentest connect claude
-```
-
-Non-goals:
-
-- does not authenticate the user into a vendor CLI
-- does not create tests yet
-
-### `agentest connect <agent>`
-
-Purpose:
-Attach agentest to the real agent runtime the team already uses.
-
-Positioning:
-Optional helper command for teams that want project-local runtime setup assistance.
-
-Primary responsibilities:
-
-- verify the CLI exists
-- verify the CLI can be invoked
-- verify the CLI is authenticated when needed
-- write connector metadata into `.agentest/config.json`
-- install or generate a local skill/profile entry when supported
-- run a minimal handshake check
-
-Inputs:
-
-- target agent: `claude` or `copilot`
-- optional command override
-- optional check-only mode
-
-Suggested flags:
-
-- `--command <path-or-name>`
-- `--force`
-- `--check-only`
-- `--format <human|json>`
-
-Side effects:
-
-- updates `.agentest/config.json`
-- writes `.agentest/skills/<agent>.md`
-- stores connector health metadata
-
-Important safety rule:
-
-The first version should not mutate global user configuration without explicit confirmation.
-Project-local configuration should be the default.
-
-Example:
-
-```bash
-npx agentest connect claude
-```
-
-Expected summary shape:
-
-```text
-Claude CLI found.
-Claude authentication available.
-Project connector written to .agentest/config.json.
-Skill guidance written to .agentest/skills/claude.md.
-Next step: npx agentest create
-```
-
 ### `agentest create`
 
 Purpose:
-Turn a natural-language test intent into a structured prompt contract spec.
+Turn a natural-language workflow description into a runnable prompt contract test.
 
-This is the primary command for mainstream users.
-It should minimize or remove the need to hand-author JS tests.
+This is the primary authoring command.
+It should minimize the need to learn the schema before the user gets value.
 
-Positioning:
-Optional spec-generation helper layered on top of `run`, not a prerequisite for adoption.
+Primary responsibilities:
 
-Supported creation modes:
-
-- interactive mode
-- source-targeted mode
-- prompt-from-session mode in a later phase
+- scan the project for prompt sources and likely MCP tool usage
+- use packaged skills and templates to infer test structure
+- generate YAML or JS test code
+- bind the generated test to a real prompt source when possible
+- produce a short explanation of what was generated and why
 
 Inputs:
 
-- natural-language description of the workflow to validate
+- natural-language intent
 - optional prompt source reference
 - optional output file path
+- optional output style such as YAML or JS
 - optional run-after-create flag
 
 Suggested flags:
@@ -232,40 +123,68 @@ Suggested flags:
 - `--source <ref>`
 - `--name <slug>`
 - `--output <path>`
+- `--as <yaml|ts>`
 - `--run`
 - `--format <human|json>`
-
-Interactive flow should ask only for the missing pieces:
-
-1. Which prompt should be tested?
-2. Which tools should be mocked?
-3. Which tool calls are required?
-4. Does order matter?
-5. Is this a one-shot test or a stability test?
-
-Side effects:
-
-- writes `.agentest/tests/<name>.agentest.yaml`
-- optionally executes a first run
-
-Expected result:
-
-- the customer sees a readable spec, not generated JS boilerplate
-- the spec points to the real prompt source, not a duplicated prompt string when possible
 
 Example:
 
 ```bash
-npx agentest create --source src/prompts/release-note.ts#buildPrompt --run
+npx agentest create "Test the checkout fix workflow. The agent should search for the bug, read the broken file, apply the null-safe fix, and stop after patching." --source src/prompts/fix-null.ts#buildPrompt --run
 ```
 
 Expected summary shape:
 
 ```text
-Created .agentest/tests/release-note.agentest.yaml.
-Bound prompt source: src/prompts/release-note.ts#buildPrompt.
-Mocked 3 tools.
-Executed initial validation run: PASS.
+Generated tests/checkout-fix.agentest.yaml
+Prompt source: src/prompts/fix-null.ts#buildPrompt
+Inferred flow: grep_search -> read_file -> replace_string_in_file
+Confidence: medium
+Initial validation run: PASS
+Next step: npx agentest flow tests/checkout-fix.agentest.yaml
+```
+
+Important rule:
+
+The output must stay reviewable.
+The user should receive a concrete artifact, not only an ephemeral agent session result.
+
+### `agentest flow`
+
+Purpose:
+Show the test as a flow the user can inspect before or after running it.
+
+Primary responsibilities:
+
+- read a generated or hand-written test spec
+- visualize prompt source, mocked tools, expected order, assertions, and chaos profile
+- output a human summary and optionally a Mermaid diagram
+
+Inputs:
+
+- test spec path
+- optional output format
+- optional output file path for diagram artifacts
+
+Suggested flags:
+
+- `--file <path>`
+- `--format <human|json|mermaid>`
+- `--write <path>`
+
+Example:
+
+```bash
+npx agentest flow tests/checkout-fix.agentest.yaml --format mermaid
+```
+
+Expected summary shape:
+
+```text
+Prompt source: src/prompts/fix-null.ts#buildPrompt
+Flow: grep_search -> read_file -> replace_string_in_file
+Assertions: exitCode=0, no timeout, stdout contains success text
+Chaos profile: light
 ```
 
 ### `agentest run`
@@ -274,21 +193,12 @@ Purpose:
 Execute prompt contract tests locally or in CI.
 
 Positioning:
-Primary entrypoint for embedded adoption.
+Primary execution entrypoint for both embedded usage and helper-generated specs.
 
-The next version of `run` should support both:
+The product layer should extend `run` to support both:
 
-- current JS-based engine tests
-- generated YAML prompt contract specs
-
-`run` should work without requiring `init` or `connect` first.
-
-Inputs:
-
-- optional test file filter
-- optional tag filter
-- optional prompt-source filter
-- execution mode such as quick or stress
+- baseline validation
+- chaos validation
 
 Suggested flags:
 
@@ -297,50 +207,56 @@ Suggested flags:
 - `--grep <pattern>`
 - `--tag <name>`
 - `--quick`
-- `--stress`
+- `--chaos <off|light|medium|heavy>`
 - `--format <human|json>`
 
-Success output should include:
+Chaos mode should report:
 
-- total tests
-- pass or fail summary
-- stability pass rate when relevant
-- location of traces for failed runs
+- total runs
+- pass rate
+- dominant drift patterns
+- risk level
+- trace/report location
 
 Example:
 
 ```bash
-npx agentest run --grep release-note
+npx agentest run --grep checkout-fix --chaos light
+```
+
+Expected summary shape:
+
+```text
+Baseline: PASS
+Chaos profile: light
+Runs: 20
+Pass rate: 85%
+Main drift:
+- 2 runs skipped replace_string_in_file
+- 1 run repeated read_file before patching
+Risk level: medium
+Reports: .agentest/reports/latest
 ```
 
 ### `agentest explain`
 
 Purpose:
-Explain why a prompt contract failed instead of only repeating an assertion message.
+Explain why a baseline or chaos run drifted instead of only repeating an assertion failure.
 
 Primary responsibilities:
 
-- inspect the latest trace or a named trace
-- compare expected tools versus actual tools
-- compare expected call order versus actual order
-- identify unmatched mocks
-- identify missing connector or MCP injection issues
-- produce repair guidance
+- inspect the latest trace or report bundle
+- compare intended flow versus actual flow
+- identify whether the problem is prompt drift, tool drift, chaos sensitivity, or environment failure
+- recommend the next action
 
 Suggested flags:
 
 - `--latest`
 - `--trace <path>`
+- `--report <path>`
 - `--file <test-spec>`
 - `--format <human|json>`
-
-Expected summary categories:
-
-- tool discovery failure
-- connector failure
-- behavior drift
-- prompt ambiguity
-- environment mismatch
 
 Example:
 
@@ -351,33 +267,31 @@ npx agentest explain --latest
 Expected summary shape:
 
 ```text
-Failure type: behavior drift
-Expected sequence: get_feature_spec -> get_bug_report -> submit_release_note
-Actual sequence: get_feature_spec -> get_bug_report
-Likely cause: prompt did not strongly constrain the terminal tool action
-Suggested fix: add an explicit completion step requiring submit_release_note
+Failure type: chaos-sensitive behavior drift
+Expected flow: grep_search -> read_file -> replace_string_in_file
+Observed drift: replace_string_in_file skipped in 3 of 20 runs
+Likely cause: the prompt does not strongly constrain the terminal write action
+Suggested fix: add an explicit completion rule and require replace_string_in_file in the contract
 ```
 
 ### `agentest doctor`
 
 Purpose:
-Diagnose environment and integration issues before users need to understand implementation details.
+Diagnose environment and integration issues.
 
 Checks should include:
 
 - Node version
 - agentest config presence
 - presence of tests
-- presence of Claude or Copilot CLI
+- presence of target agent CLI
 - ability to invoke the selected CLI
-- ability to create a temporary MCP config
 - ability to boot the mock MCP server
 - ability to resolve configured prompt sources
 
 Suggested flags:
 
 - `--agent <claude|copilot|auto>`
-- `--fix` in a later phase
 - `--format <human|json>`
 
 Example:
@@ -386,46 +300,43 @@ Example:
 npx agentest doctor
 ```
 
-Expected summary shape:
+### `agentest init`
 
-```text
-PASS Node.js detected
-PASS agentest config loaded
-PASS Claude CLI detected
-PASS mock MCP server booted
-WARN prompt source src/prompts/release-note.ts#buildPrompt could not be resolved
-FAIL no tests found under .agentest/tests
-```
+Purpose:
+Optional bootstrap command for projects that want workspace scanning and helper artifact setup.
 
-## Implementation Order
+Important constraint:
+`init` should not become the main story.
+It supports the AI-native flow, but the key value should still come from `create`, `flow`, and `run --chaos`.
 
-Recommended delivery order:
+Primary responsibilities:
 
-1. embedded config discovery from `package.json#agentest` and `agentest.config.*`
-2. YAML spec adapter inside `run`
-3. prompt source resolution from module, file, and command references
-4. `doctor`
-5. `connect`
-6. `create`
-7. `explain`
-8. continued `init` refinement
+- detect prompt sources
+- detect likely tools and agent runtimes
+- create `.agentest/cache/` and optional skill placeholders
+- recommend the next `create` command
+
+## Recommended Delivery Order
+
+1. keep embedded config discovery and YAML execution stable
+2. add natural-language spec generation through `create`
+3. add `flow` visualization output
+4. add `run --chaos` profiles and reporting
+5. improve `explain` around chaos drift
+6. continue refining `doctor` and optional `init`
 
 Reasoning:
 
-- the embedded path must work before helper commands matter
-- YAML support in `run` makes the new product contract executable
-- prompt source resolution is the bridge between existing repos and generated specs
-- `doctor` and `connect` reduce integration friction once the core path exists
-- `create` becomes useful only after the spec format is runnable
-- `explain` depends on stable trace and failure metadata
+- authoring friction is now the main product gap
+- visualization is the approval layer for generated specs
+- chaos is the differentiator for model + agent stability testing
+- `explain` becomes much more valuable once chaos reports exist
 
-## Non-Goals For The First Product Layer
+## Non-Goals For This Product Layer
 
-- browser UI
-- replay or record mode
-- auto-rewriting prompts
-- multi-agent orchestration
-- remote hosted storage
+- browser UI in the first pass
+- fully automatic prompt rewriting
+- remote hosted control plane
+- opaque agent-managed state with no reviewable artifacts
 
-The first goal is a clean embedded test capability that fits naturally inside an existing repository.
-The helper CLI workflow should accelerate that path, not replace it.
+The first goal is an AI-native local product surface that still produces clear files, clear flow graphs, and clear chaos reports.

@@ -2,6 +2,9 @@
 
 This guide is for teams who want to add agentest to an existing prompt-driven repository and start testing with the smallest possible setup.
 
+This document describes the current practical path.
+If you want the intended AI-native product flow based on natural-language generation, flow visualization, and chaos evaluation, see [ai-native-experience.md](ai-native-experience.md).
+
 ## The Intended User Path
 
 The happy path is:
