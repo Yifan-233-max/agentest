@@ -14,6 +14,7 @@ Start from the user's repository, not from memory.
 4. Use that manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
 
 Use the manifest to discover local packaged assets such as `README.md`, `AGENTS.md`, `docs/usage.md`, `docs/minimal-template.md`, and example material. This file remains the operating protocol; the manifest is the discovery entrypoint.
+Bootstrap installation is the only allowed pre-review write. Use it only to make the packaged guidance locally available. Do not write config files, test specs, or run `agentest` commands until after the user approves the proposed flow.
 
 ## What agentest Does
 
@@ -45,7 +46,7 @@ Do not ask the user questions yet. Inspect the repository silently and gather ev
 - Resolve `agentest/agent-kit/manifest.json`.
 - Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
 
-Do this before you decide how to wire config, specs, mocks, or assertions.
+Do this before you decide how to wire config, specs, mocks, or assertions. If installation is required, treat it only as bootstrap so the local guidance can be inspected before the review step.
 
 **1.1 Detect the agent runtime**
 
@@ -134,7 +135,7 @@ npm i -D agentest
 
 Use the repo's package manager if it is not npm. If `agentest` is already installed, do not reinstall it just to continue.
 
-Do not write files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2.
+Do not write project-specific config/spec files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2. Bootstrap installation in Phase 1 is the only exception.
 
 **3.2 Add config**
 
