@@ -5,6 +5,9 @@ Test AI CLI workflows like unit tests.
 `agentest` lets teams test real prompt-driven agent workflows without changing the prompt or switching to a fake model.
 You run the same prompt against the same CLI, but in test mode the MCP tool layer is replaced with mocked MCP tools that are traced and checked.
 
+You do not need to clone the `agentest` source repo to adopt it.
+The intended path is package-first: your AI agent can install `agentest`, discover the bundled local guidance at `agentest/agent-kit/manifest.json`, and bootstrap the first test flow from there.
+
 ## Why It Matters
 
 If your team already ships workflows through Claude Code, Copilot CLI, or a custom MCP-enabled agent, you usually have two bad options today:
@@ -53,29 +56,29 @@ prompt -> AI CLI -> agentest mock MCP -> injected responses + trace + assertions
 
 The intended user experience is simple:
 
-1. understand the value
-2. install `agentest`
-3. ask your AI coding agent to add prompt testing to the repository
-4. review the proposed test flow
-5. approve the run and receive the result
+1. describe the workflow or scenario to test in natural language
+2. let the AI agent check whether `agentest` is already installed
+3. if it is missing, let the AI agent install it
+4. let the AI agent use the installed guidance bundle to discover the repo context and design the first test flow
+5. review the proposed flow
+6. approve the run and receive the result
 
-The customer should not need to learn the config shape or the CLI commands before getting value.
+The customer should not need to learn the config shape, clone this repo, or memorize CLI commands before getting value.
 Setup, test design, config generation, flow review, execution, and result reporting should all be handled by an AI coding agent.
 
-`agentest` only needs one setup guidance source for that flow: [AGENTS.md](AGENTS.md).
+For adopters, the bootstrap guidance travels with the installed package.
+This repo's [AGENTS.md](AGENTS.md) remains the contributor-facing entry point for working on `agentest` itself.
 
 ## AI-Driven Workflow
 
-Install:
-
-```bash
-npm i -D agentest
-```
-
-After that, hand the repository to your AI coding agent. The user should not have to tell the agent which files to create, which commands to run, or how to shape the config.
+The main story is not "install a tool, read docs, then figure out the commands."
+The main story is "tell your AI agent what workflow to test."
 
 The AI agent should:
 
+- check whether `agentest` is already installed in the repo environment
+- install `agentest` if it is missing
+- discover the installed local guidance bundle at `agentest/agent-kit/manifest.json`
 - find the existing AI CLI
 - find the real prompt source
 - identify the MCP tools the workflow actually uses
@@ -88,10 +91,19 @@ The AI agent should:
 
 The user should only need to review the proposed flow and approve the run.
 
+If someone wants to install it manually first, that is still available:
+
+```bash
+npm i -D agentest
+```
+
 ## What The Agent Can Use Today
 
 Available now:
 
+- an installed local guidance bundle discoverable at `agentest/agent-kit/manifest.json`
+- package-first bootstrap in an existing repo without cloning the `agentest` source repo
+- guidance that helps the AI agent bootstrap without extra human instructions
 - generate a first YAML spec from natural-language intent and detected prompt sources
 - show a reviewable summary or Mermaid graph of a YAML test spec
 - execute prompt tests locally or in CI
