@@ -16,8 +16,12 @@
     "dist",
     "AGENTS.md",
     "README.md",
+    "docs/ai-native-experience.md",
+    "docs/product-api.md",
+    "docs/prompt-test-spec-v0.1.md",
     "docs/usage.md",
     "docs/minimal-template.md",
+    "examples/consumer/package.json",
     "examples/consumer/agentest.config.ts",
     "examples/consumer/src/prompts/fix-null.ts",
     "examples/consumer/tests/fix-null.agentest.yaml",
@@ -25,6 +29,10 @@
     "examples/github-issue-triage/agentest.config.ts",
     "examples/github-issue-triage/prompts/triage-issue.ts",
     "examples/github-issue-triage/tests/triage-issue.agentest.yaml",
+    "examples/simple/agentest.config.mjs",
+    "examples/simple/fake-agent.mjs",
+    "examples/simple/tests/fix-null.agent.test.mjs",
+    "examples/simple/tests/fix-null.agentest.yaml",
     "agent-kit/manifest.json"
   ],
   "scripts": {

@@ -280,4 +280,4 @@ Do not present unimplemented commands as available.
 - Product framing: [README.md](README.md)
 - Detailed setup and execution: [docs/usage.md](docs/usage.md)
 - Real Copilot CLI example: [examples/github-issue-triage/README.md](examples/github-issue-triage/README.md)
-- Fake agent example: [examples/consumer/README.md](examples/consumer/README.md)
+- Deterministic local example files: `examples/consumer/package.json`, `examples/consumer/agentest.config.ts`, and `examples/consumer/tests/fix-null.agentest.yaml`

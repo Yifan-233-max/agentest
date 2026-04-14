@@ -1,13 +1,19 @@
 # Usage Guide
 
-This guide is for teams who want to add agentest to an existing prompt-driven repository and start testing with the smallest possible setup.
+This guide is for teams who want to add agentest to an existing prompt-driven repository and start testing with the smallest practical setup.
 
-This document describes the current practical path.
-If you want the intended AI-native product flow based on natural-language generation, flow visualization, and chaos evaluation, see [ai-native-experience.md](ai-native-experience.md).
+The primary product story is:
+
+1. tell your AI coding agent what workflow to test
+2. let the agent check whether `agentest` is already installed
+3. if it is missing, let the agent install it
+4. let the agent inspect the local guidance bundle exposed at `agentest/agent-kit/manifest.json`
+5. review the proposed flow
+6. after approval, let the agent write config/spec files and run the test
 
 ## The Intended User Path
 
-The happy path is:
+If you want to drive the setup manually, the current direct path is:
 
 ```bash
 npm i -D agentest
@@ -20,7 +26,7 @@ For that to work, your repository needs three small pieces:
 2. `agentest.config.ts`
 3. one or more `*.agentest.yaml` specs
 
-If you do not want to hand-write the first spec, the current minimal AI-native path is:
+If you do not want to hand-write the first spec, the current direct AI-assisted path is:
 
 ```bash
 npx agentest create "Test the checkout fix workflow"

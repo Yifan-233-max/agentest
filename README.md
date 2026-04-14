@@ -138,7 +138,7 @@ If you are contributing to `agentest` itself, or you want the detailed integrati
 - product command draft: [docs/product-api.md](docs/product-api.md)
 - prompt test spec draft: [docs/prompt-test-spec-v0.1.md](docs/prompt-test-spec-v0.1.md)
 - real Copilot CLI walkthrough: [examples/github-issue-triage/README.md](examples/github-issue-triage/README.md)
-- deterministic local walkthrough: [examples/consumer/README.md](examples/consumer/README.md)
+- deterministic local example files: `examples/consumer/package.json`, `examples/consumer/agentest.config.ts`, and `examples/consumer/tests/fix-null.agentest.yaml`
 
 Maintainer validation commands:
 
