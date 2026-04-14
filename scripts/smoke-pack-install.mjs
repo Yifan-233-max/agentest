@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, rm, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +37,44 @@ function runCommand(command, args, cwd) {
       resolve({ stdout, stderr, exitCode });
     });
   });
+}
+
+async function assertAgentKit(projectRoot) {
+  const resolveManifestResult = await runCommand(
+    npmCommand,
+    ['exec', '--', 'node', '-e', "console.log(require.resolve('agentest/agent-kit/manifest.json'))"],
+    projectRoot,
+  );
+
+  if (resolveManifestResult.exitCode !== 0) {
+    throw new Error(
+      resolveManifestResult.stderr
+      || resolveManifestResult.stdout
+      || 'Failed to resolve agentest/agent-kit/manifest.json from the installed package.',
+    );
+  }
+
+  const manifestPath = resolveManifestResult.stdout.trim();
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const manifestDir = path.dirname(manifestPath);
+
+  const requiredRelativePaths = [
+    manifest.docs.overview,
+    manifest.docs.agent,
+    manifest.docs.usage,
+    manifest.docs.minimalTemplate,
+    manifest.examples.consumer.config,
+    manifest.examples.consumer.prompt,
+    manifest.examples.consumer.spec,
+    manifest.examples.githubIssueTriage.readme,
+    manifest.examples.githubIssueTriage.config,
+    manifest.examples.githubIssueTriage.prompt,
+    manifest.examples.githubIssueTriage.spec,
+  ];
+
+  for (const relativePath of requiredRelativePaths) {
+    await access(path.resolve(manifestDir, relativePath));
+  }
 }
 
 async function writeProjectFiles(projectRoot) {
@@ -258,6 +296,8 @@ async function main() {
     if (installResult.exitCode !== 0) {
       throw new Error(installResult.stderr || installResult.stdout || 'npm install failed.');
     }
+
+    await assertAgentKit(projectRoot);
 
     const runResult = await runCommand(npmCommand, ['exec', '--', 'agentest', 'run'], projectRoot);
     process.stdout.write(runResult.stdout);
