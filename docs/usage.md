@@ -20,6 +20,20 @@ For that to work, your repository needs three small pieces:
 2. `agentest.config.ts`
 3. one or more `*.agentest.yaml` specs
 
+If you do not want to hand-write the first spec, the current minimal AI-native path is:
+
+```bash
+npx agentest create "Test the checkout fix workflow"
+npx agentest flow tests/checkout-fix.agentest.yaml
+```
+
+Current limits:
+
+- `create` currently generates YAML only
+- `flow` currently visualizes YAML specs only
+
+Both commands are intentionally minimal first versions.
+
 ## Minimal Setup
 
 ### 1. package.json
@@ -86,6 +100,41 @@ assert:
 
 ```bash
 npx agentest run
+```
+
+## Generate The First Spec
+
+The current minimal generator can create a first YAML spec from natural-language intent.
+
+Example:
+
+```bash
+npx agentest create "Test the checkout fix workflow. The agent should search for the bug, read the broken file, apply the null-safe fix, and stop after patching."
+```
+
+Useful flags:
+
+- `--source <ref>` to bind the generated test to a prompt file or prompt module
+- `--output <path>` to control where the YAML is written
+- `--run` to execute the generated spec immediately
+- `--force` to overwrite an existing target file
+
+Example with an explicit prompt module:
+
+```bash
+npx agentest create "Test the checkout fix workflow" --source src/prompts/fix-null.ts#buildPrompt --run
+```
+
+After generation, inspect the spec with:
+
+```bash
+npx agentest flow tests/checkout-fix.agentest.yaml
+```
+
+Or render Mermaid output:
+
+```bash
+npx agentest flow tests/checkout-fix.agentest.yaml --format mermaid
 ```
 
 ## Config Sources

@@ -1,10 +1,9 @@
-import { readFile } from 'node:fs/promises';
-import YAML from 'yaml';
 import { isRecord, match } from '../matchers.js';
 import { expect } from '../result.js';
 import { AgentTestContext } from '../runner/test-context.js';
 import type { ResolvedAgentestConfig } from '../types.js';
 import type { TestRunSummary } from '../runner/run-tests.js';
+import { isYamlTestFile, loadPromptTestSpec } from './load-spec.js';
 import { resolvePromptSource } from './resolve-prompt-source.js';
 import type {
   PromptSourceSpec,
@@ -17,10 +16,6 @@ import type {
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
-}
-
-function isYamlTestFile(filePath: string): boolean {
-  return filePath.endsWith('.agentest.yaml') || filePath.endsWith('.agentest.yml');
 }
 
 function convertMatcher(value: unknown): unknown {
@@ -52,28 +47,6 @@ function convertMatcher(value: unknown): unknown {
 
 function normalizeArray(value: unknown[] | undefined): unknown[] {
   return Array.isArray(value) ? value : [];
-}
-
-async function loadPromptTestSpec(filePath: string): Promise<PromptTestSpec> {
-  const sourceText = await readFile(filePath, 'utf8');
-  let parsed: unknown;
-  try {
-    parsed = YAML.parse(sourceText) as unknown;
-  } catch (error) {
-    throw new Error(
-      `Failed to parse prompt test spec at ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-
-  if (!isRecord(parsed) || typeof parsed.name !== 'string' || !isRecord(parsed.promptSource)) {
-    throw new Error(`Invalid prompt test spec at ${filePath}. Expected at least "name" and "promptSource".`);
-  }
-
-  if (parsed.version !== '0.1' && parsed.version !== 0.1) {
-    throw new Error(`Unsupported prompt test spec version at ${filePath}. Expected version 0.1.`);
-  }
-
-  return parsed as unknown as PromptTestSpec;
 }
 
 function resolveSpecConfig(baseConfig: ResolvedAgentestConfig, spec: PromptTestSpec): ResolvedAgentestConfig {

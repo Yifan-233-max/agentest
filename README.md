@@ -12,7 +12,30 @@ That gives you a stable way to verify:
 - the arguments sent to each tool
 - the final process result, output, and timeout behavior
 
-## The Model
+## What It Is
+
+`agentest` is for teams who already use an AI CLI such as Claude Code, Copilot CLI, or a custom MCP-enabled agent, and want to test real workflows without changing the prompt or switching to a fake model.
+
+What stays the same:
+
+- your prompt
+- your agent CLI
+- your prompt source files
+
+What changes in test mode:
+
+- the real MCP tool layer is replaced by mocked MCP tools
+- tool calls are traced
+- the run is checked against a test contract
+
+That means you can answer questions like:
+
+- did the agent choose the right tools?
+- did it call them in the right order?
+- did it stop before an unsafe or wrong final action?
+- does the workflow still behave correctly after prompt edits?
+
+## How It Works
 
 Normal development flow:
 
@@ -30,83 +53,36 @@ The prompt stays the same.
 The CLI stays the same.
 Only the tool layer changes.
 
-## Why This Exists
+## Customer Workflow
 
-Prompt-driven workflows are hard to regression test because tool selection and execution paths can drift over time.
+The intended customer journey is:
 
-`agentest` treats MCP tools as the external dependency boundary, similar to mocking HTTP or database layers in traditional unit tests.
+1. install `agentest` in an existing prompt-driven repository
+2. point it at the agent CLI and tools your workflow already uses
+3. generate the first test from natural language, or write the YAML yourself
+4. inspect the generated flow so you can confirm what is actually being tested
+5. run the test locally or in CI
 
-That makes it possible to test agent behavior without depending on a live filesystem, shell, database, or remote service.
-
-## Current MVP
-
-Implemented now:
-
-- `defineConfig(...)` for project-level test configuration
-- `agentTest(...)` for writing test cases
-- config discovery from `agentest.config.*` or `package.json#agentest`
-- native TypeScript support for `agentest.config.ts`, `*.agent.test.ts`, and `promptSource.kind: module`
-- simplified tool declarations such as `tools: ['read_file', 'grep_search']`
-- declarative YAML prompt spec execution through `agentest run`
-- prompt source resolution from `inline`, `file`, `module`, and `command`
-- mocked MCP server over stdio
-- session runner with `agentest run`
-- optional helper commands: early `agentest init` and `agentest doctor`
-- agent presets for `custom`, `claude`, and `copilot`
-- assertions for tool calls, tool sequence, counts, stdout, stderr, exit code, timeout, and unmatched calls
-- a minimal runnable example
-- real preset-based E2E examples for Claude Code and Copilot CLI
-
-Not implemented yet:
-
-- sandbox mode with real file and shell tools
-- replay/record mode
-- rich reporters
-- vendor-specific deep integrations
-
-## Target AI-Native UX
-
-The runtime is already good enough to execute generated YAML or JS specs.
-The next product step should not force users to start from a blank schema file.
-
-The intended customer path is:
+The current minimal AI-assisted flow is:
 
 ```bash
 npm i -D agentest
 npx agentest create "Test the checkout fix workflow"
 npx agentest flow tests/checkout-fix.agentest.yaml
-npx agentest run --chaos light
-npx agentest explain --latest
-```
-
-That flow means:
-
-- generate the first test from natural language and packaged skills
-- review the test as a readable flow graph before execution
-- run baseline and chaos validation
-- inspect where the model + agent drifts under perturbation
-
-The detailed product-direction doc is in [docs/ai-native-experience.md](docs/ai-native-experience.md), and the command surface draft is in [docs/product-api.md](docs/product-api.md).
-
-## Use In Your Project
-
-The primary adoption path is library-first.
-You add `agentest` to an existing prompt-driven repository, point it at your current prompt sources, add a small number of tests, and run them in the same repo.
-
-The intended happy path is:
-
-```bash
-npm i -D agentest
 npx agentest run
 ```
 
-To make that work, your repository needs three small pieces:
+## Quick Start
 
-1. `package.json#agentest`
-2. `agentest.config.ts`
-3. one or more `*.agentest.yaml` files
+### 1. Install
 
-Minimal `package.json`:
+```bash
+npm i -D agentest
+```
+
+### 2. Point agentest at your project
+
+Add this to `package.json`:
 
 ```json
 {
@@ -118,7 +94,7 @@ Minimal `package.json`:
 }
 ```
 
-Minimal `agentest.config.ts`:
+Then add `agentest.config.ts`:
 
 ```ts
 import { defineConfig } from 'agentest';
@@ -127,7 +103,7 @@ export default defineConfig({
   agent: {
     preset: 'claude',
   },
-  tools: ['read_file'],
+  tools: ['grep_search', 'read_file', 'replace_string_in_file'],
   test: {
     files: ['./tests/**/*.agentest.yaml'],
     failOnUnmockedTool: true,
@@ -135,7 +111,79 @@ export default defineConfig({
 });
 ```
 
-Minimal `tests/reads-file.agentest.yaml`:
+Replace the preset or command with whatever your team already uses.
+The important part is the `tools` list: it defines the MCP tools your tests are allowed to mock.
+
+### 3. Generate the first test from natural language
+
+```bash
+npx agentest create "Test the checkout fix workflow. The agent should search for the bug, read the broken file, apply the null-safe fix, and stop after patching." --source src/prompts/fix-null.ts#buildPrompt --output tests/checkout-fix.agentest.yaml
+```
+
+What `create` does today:
+
+- reads your current config
+- looks at the prompt or workflow source you point it to, or auto-detects one
+- infers a first tool flow from your configured tools and intent
+- writes a reviewable YAML spec
+
+If you prefer, you can also write the YAML spec yourself and skip `create`.
+
+### 4. Review what the test is actually checking
+
+```bash
+npx agentest flow tests/checkout-fix.agentest.yaml
+```
+
+Or render Mermaid output:
+
+```bash
+npx agentest flow tests/checkout-fix.agentest.yaml --format mermaid
+```
+
+`flow` is the confirmation step.
+It lets the user verify the prompt source, mocked tools, expected order, and assertions before relying on the test.
+
+### 5. Run the test
+
+```bash
+npx agentest run
+```
+
+Or generate and run immediately:
+
+```bash
+npx agentest create "Test the checkout fix workflow" --source src/prompts/fix-null.ts#buildPrompt --output tests/checkout-fix.agentest.yaml --run
+```
+
+## What You Get Today
+
+Implemented now:
+
+- config discovery from `agentest.config.*` or `package.json#agentest`
+- native TypeScript support for `agentest.config.ts`, `*.agent.test.ts`, and `promptSource.kind: module`
+- simplified tool declarations such as `tools: ['read_file', 'grep_search']`
+- declarative YAML prompt spec execution through `agentest run`
+- prompt source resolution from `inline`, `file`, `module`, and `command`
+- minimal `agentest flow` for reviewing YAML specs as a summarized flow or Mermaid graph
+- minimal `agentest create` for generating a first YAML spec from natural-language intent and detected prompt sources
+- mocked MCP server over stdio
+- session runner with `agentest run`
+- agent presets for `custom`, `claude`, and `copilot`
+- assertions for tool calls, tool sequence, counts, stdout, stderr, exit code, timeout, and unmatched calls
+
+Current limits:
+
+- `create` currently emits YAML only
+- `flow` currently reads YAML specs only
+- `run --chaos` is not implemented yet
+- `explain` is not implemented yet
+
+## If You Prefer Manual YAML
+
+You can skip `create` and start with a hand-written spec.
+
+Example:
 
 ```yaml
 version: 0.1
@@ -162,19 +210,18 @@ assert:
     timeout: false
 ```
 
-Run it with:
+Then run:
 
 ```bash
 npx agentest run
 ```
 
-The full step-by-step guide is in [docs/usage.md](docs/usage.md), and the smallest copy-paste template is in [docs/minimal-template.md](docs/minimal-template.md).
+## Where To Go Next
 
-Today, the most practical path is still to write or review YAML directly.
-But the intended product UX is to generate that first draft from natural language, then review it through a flow view instead of starting from a blank test file.
-
-The helper commands such as `init`, `connect`, `create`, `explain`, and `doctor` are optional accelerators.
-They should not be the only way to onboard.
+- Step-by-step usage guide: [docs/usage.md](docs/usage.md)
+- Smallest copy-paste template: [docs/minimal-template.md](docs/minimal-template.md)
+- AI-native product direction: [docs/ai-native-experience.md](docs/ai-native-experience.md)
+- Product command draft: [docs/product-api.md](docs/product-api.md)
 
 ## Maintainer Validation
 

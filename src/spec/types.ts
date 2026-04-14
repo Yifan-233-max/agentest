@@ -37,6 +37,12 @@ export interface PromptTestSpecExecution {
   stability?: StabilityConfig;
 }
 
+export type PromptTestChaosProfile = 'off' | 'light' | 'medium' | 'heavy';
+
+export interface PromptTestSpecChaos {
+  profile?: PromptTestChaosProfile;
+}
+
 export interface PromptTestSpecMock {
   tool: string;
   when?: unknown;
@@ -85,6 +91,7 @@ export interface PromptTestSpec {
   agent?: PromptTestSpecAgent;
   promptSource: PromptSourceSpec;
   execution?: PromptTestSpecExecution;
+  chaos?: PromptTestSpecChaos;
   mocks?: PromptTestSpecMock[];
   assert?: PromptTestSpecAssertions;
 }

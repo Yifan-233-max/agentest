@@ -1,16 +1,11 @@
 import path from 'node:path';
 import { access, mkdir, writeFile } from 'node:fs/promises';
-import { glob } from 'tinyglobby';
 import { locateCommand } from '../platform/command-discovery.js';
+import { detectPromptSources, type PromptSourceCandidate } from '../project/discover-prompt-sources.js';
 
 export type InitAgentPreset = 'claude' | 'copilot';
 export type InitAgentPreference = InitAgentPreset | 'auto';
 export type InitFormat = 'human' | 'json';
-
-interface PromptSourceCandidate {
-  kind: 'file' | 'module-candidate';
-  path: string;
-}
 
 interface DetectedAgent {
   name: InitAgentPreset;
@@ -59,13 +54,6 @@ export interface InitReport {
   warnings: string[];
 }
 
-const IGNORE_PATTERNS = [
-  '**/node_modules/**',
-  '**/dist/**',
-  '**/.git/**',
-  '**/.agentest/**',
-];
-
 async function fileExists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
@@ -85,57 +73,6 @@ async function detectLegacyConfig(workspaceRoot: string): Promise<string | undef
   }
 
   return undefined;
-}
-
-async function detectPromptSources(workspaceRoot: string): Promise<PromptSourceCandidate[]> {
-  const fileSources = await glob([
-    'prompts/**/*.{md,txt,prompt}',
-    '**/*prompt*.{md,txt}',
-  ], {
-    cwd: workspaceRoot,
-    onlyFiles: true,
-    ignore: IGNORE_PATTERNS,
-  });
-
-  const moduleSources = await glob([
-    'src/**/*prompt*.{ts,js,mjs,cjs,tsx,jsx}',
-    '**/prompts/**/*.{ts,js,mjs,cjs,tsx,jsx}',
-  ], {
-    cwd: workspaceRoot,
-    onlyFiles: true,
-    ignore: IGNORE_PATTERNS,
-  });
-
-  const seen = new Set<string>();
-  const promptSources: PromptSourceCandidate[] = [];
-
-  for (const entry of fileSources) {
-    const normalized = entry.replaceAll('\\', '/');
-    if (seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    promptSources.push({
-      kind: 'file',
-      path: normalized,
-    });
-  }
-
-  for (const entry of moduleSources) {
-    const normalized = entry.replaceAll('\\', '/');
-    if (seen.has(normalized)) {
-      continue;
-    }
-
-    seen.add(normalized);
-    promptSources.push({
-      kind: 'module-candidate',
-      path: normalized,
-    });
-  }
-
-  return promptSources.sort((left, right) => left.path.localeCompare(right.path));
 }
 
 async function detectAgents(workspaceRoot: string): Promise<DetectedAgent[]> {
