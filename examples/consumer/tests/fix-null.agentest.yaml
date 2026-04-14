@@ -1,0 +1,55 @@
+version: 0.1
+name: consumer demo loads TypeScript config and prompt module
+
+promptSource:
+  kind: module
+  ref: ../src/prompts/fix-null.ts#buildPrompt
+
+execution:
+  timeoutMs: 10000
+
+mocks:
+  - tool: grep_search
+    when:
+      query:
+        regex: user-service|TypeError|name
+    returns:
+      - file: src/user-service.ts
+        line: 2
+        text: return user.name.trim();
+
+  - tool: read_file
+    when:
+      filePath: src/user-service.ts
+    returns: |
+      export function getDisplayName(user) {
+        return user.name.trim();
+      }
+
+  - tool: replace_string_in_file
+    returns:
+      success: true
+
+assert:
+  tools:
+    required:
+      - grep_search
+      - read_file
+      - replace_string_in_file
+    sequence:
+      - grep_search
+      - read_file
+      - replace_string_in_file
+    only:
+      - grep_search
+      - read_file
+      - replace_string_in_file
+    noUnmatchedCalls: true
+
+  process:
+    exitCode: 0
+    timeout: false
+
+  output:
+    stdoutContains:
+      - contains: Applied null-safe fix

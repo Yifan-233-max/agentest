@@ -45,6 +45,10 @@ Implemented now:
 - `defineConfig(...)` for project-level test configuration
 - `agentTest(...)` for writing test cases
 - config discovery from `agentest.config.*` or `package.json#agentest`
+- native TypeScript support for `agentest.config.ts`, `*.agent.test.ts`, and `promptSource.kind: module`
+- simplified tool declarations such as `tools: ['read_file', 'grep_search']`
+- declarative YAML prompt spec execution through `agentest run`
+- prompt source resolution from `inline`, `file`, `module`, and `command`
 - mocked MCP server over stdio
 - session runner with `agentest run`
 - optional helper commands: early `agentest init` and `agentest doctor`
@@ -60,24 +64,94 @@ Not implemented yet:
 - rich reporters
 - vendor-specific deep integrations
 
-## Embedded Adoption
+## Use In Your Project
 
 The primary adoption path is library-first.
 You add `agentest` to an existing prompt-driven repository, point it at your current prompt sources, add a small number of tests, and run them in the same repo.
 
-The intended minimal user flow is:
+The intended happy path is:
 
-1. install `agentest`
-2. add `package.json#agentest` or `agentest.config.mjs`
-3. write tests near the existing project
-4. run `agentest run`
+```bash
+npm i -D agentest
+npx agentest run
+```
+
+To make that work, your repository needs three small pieces:
+
+1. `package.json#agentest`
+2. `agentest.config.ts`
+3. one or more `*.agentest.yaml` files
+
+Minimal `package.json`:
+
+```json
+{
+  "type": "module",
+  "scripts": {
+    "test:prompts": "agentest run"
+  },
+  "agentest": "./agentest.config.ts"
+}
+```
+
+Minimal `agentest.config.ts`:
+
+```ts
+import { defineConfig } from 'agentest';
+
+export default defineConfig({
+  agent: {
+    preset: 'claude',
+  },
+  tools: ['read_file'],
+  test: {
+    files: ['./tests/**/*.agentest.yaml'],
+    failOnUnmockedTool: true,
+  },
+});
+```
+
+Minimal `tests/reads-file.agentest.yaml`:
+
+```yaml
+version: 0.1
+name: reads a mocked file
+
+promptSource:
+  kind: inline
+  text: Read the file and explain the bug
+
+mocks:
+  - tool: read_file
+    when:
+      filePath: src/user-service.ts
+    returns: return user.name.trim();
+
+assert:
+  tools:
+    required:
+      - read_file
+    noUnmatchedCalls: true
+
+  process:
+    exitCode: 0
+    timeout: false
+```
+
+Run it with:
+
+```bash
+npx agentest run
+```
+
+The full step-by-step guide is in [docs/usage.md](docs/usage.md), and the smallest copy-paste template is in [docs/minimal-template.md](docs/minimal-template.md).
 
 The helper commands such as `init`, `connect`, `create`, `explain`, and `doctor` are optional accelerators.
 They should not be the only way to onboard.
 
-## Quick Start
+## Maintainer Validation
 
-In this repository, the thinnest entrypoint is now `package.json#agentest`, so you can run the example without passing `--config`:
+If you are working on this repository itself rather than consuming the package, use these commands:
 
 ```bash
 npm install
@@ -85,39 +159,29 @@ npm run check
 npm run run:embedded
 ```
 
-Expected result:
+The consumer-style demo lives in [examples/consumer/package.json](examples/consumer/package.json), [examples/consumer/agentest.config.ts](examples/consumer/agentest.config.ts), and [examples/consumer/tests/fix-null.agentest.yaml](examples/consumer/tests/fix-null.agentest.yaml).
+It validates the path where a nested project uses `package.json#agentest`, a TypeScript config, string-based tools, and a TypeScript prompt module without extra bootstrap commands.
 
-```text
-PASS uses mocked MCP tools to validate a null-safe fix workflow (1/1, need 100%)
-
-1 passed, 0 failed, 1 total
-```
-
-The runnable example is resolved from `package.json#agentest` and points at [examples/simple/agentest.config.mjs](examples/simple/agentest.config.mjs), [examples/simple/tests/fix-null.agent.test.mjs](examples/simple/tests/fix-null.agent.test.mjs), and [examples/simple/fake-agent.mjs](examples/simple/fake-agent.mjs).
-
-In a real prompt-driven project, the equivalent setup is:
+Run it with:
 
 ```bash
-npm i -D agentest
+npm run run:consumer
 ```
 
-```json
-{
-  "scripts": {
-    "test:prompts": "agentest run"
-  },
-  "agentest": "./agentest.config.mjs"
-}
+The most realistic maintainer smoke test is the packed-install path:
+
+```bash
+npm run smoke:pack-install
 ```
 
-Then add `agentest.config.mjs` and a small number of prompt tests in your existing repo.
+That command runs `npm pack`, installs the tarball into a fresh temporary project, and verifies that `agentest run` works there.
 
 ## Config Sources
 
 `agentest run` currently resolves config in this order:
 
 1. `--config <path>`
-2. `agentest.config.mjs`, `agentest.config.js`, or `agentest.config.ts`
+2. `agentest.config.ts`, `agentest.config.mjs`, or `agentest.config.js`
 3. `package.json#agentest`
 
 `package.json#agentest` can be:
@@ -125,12 +189,48 @@ Then add `agentest.config.mjs` and a small number of prompt tests in your existi
 - a string path to a config file
 - an inline JSON config object for simpler cases
 
-Default JS test discovery is now intentionally repo-friendly:
+Tool declarations can be either:
+
+- strings, for the minimal path
+- full objects with `name`, `description`, and `inputSchema`
+
+Example:
+
+```ts
+tools: ['read_file', 'grep_search']
+```
+
+`agentest run` currently executes both:
+
+- JS tests using `agentTest(...)`
+- YAML specs such as `*.agentest.yaml`
+
+TypeScript is supported in:
+
+- `agentest.config.ts`
+- `*.agent.test.ts`
+- `promptSource.kind: module` refs that point at `.ts` files
+
+Default test discovery is now intentionally repo-friendly:
 
 - `tests/**/*.agent.test.{js,mjs,ts}`
 - `**/*.agent.test.{js,mjs,ts}`
+- `tests/**/*.agentest.{yaml,yml}`
+- `**/*.agentest.{yaml,yml}`
 
 That lets teams colocate tests with prompt modules instead of forcing a separate test workspace.
+
+## First-Run Errors
+
+The common first-run failures are:
+
+- no config found
+- no tests found
+- mock references an unknown tool
+- `promptSource` path or export cannot be resolved
+- target CLI is missing or not authenticated
+
+The detailed troubleshooting guide is in [docs/usage.md](docs/usage.md).
 
 ## Real CLI E2E Examples
 
@@ -156,7 +256,7 @@ Prerequisites:
 
 These examples are true end-to-end agent invocations, not the fake demo agent. The MCP side effects are still mocked, which keeps the test deterministic and safe.
 
-## Example
+## Advanced JS DSL
 
 Config:
 
@@ -212,7 +312,7 @@ export default agentTest('reads a mocked file', async (t) => {
 Run it with:
 
 ```bash
-agentest run --config ./agentest.config.mjs
+agentest run --config ./agentest.config.ts
 ```
 
 Or, if you point `package.json#agentest` at that file:
@@ -311,8 +411,8 @@ The product workflow spec is in [docs/product-api.md](docs/product-api.md), and 
 
 The next implementation priorities are:
 
-1. support YAML prompt contract specs directly in `run`
-2. keep config and test assets thin enough for existing repos
+1. support richer YAML filtering and selection in `run`
+2. further reduce first-run friction and error handling
 3. expand reporters and CI ergonomics
 4. add replay and trace inspection
 5. harden vendor presets and real-world examples

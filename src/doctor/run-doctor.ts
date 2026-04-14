@@ -8,7 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { discoverTestFiles, loadConfig, tryResolveConfigPath } from '../config/load-config.js';
 import { locateCommand } from '../platform/command-discovery.js';
 import { resolveAgentInvocation } from '../runner/resolve-agent.js';
-import type { AgentestConfig, MockServerState } from '../types.js';
+import type { MockServerState, ResolvedAgentestConfig } from '../types.js';
 
 export type DoctorStatus = 'pass' | 'warn' | 'fail';
 export type DoctorFormat = 'human' | 'json';
@@ -115,7 +115,7 @@ async function runProbe(options: {
   };
 }
 
-function resolveAgentCwd(config: AgentestConfig, projectRoot: string): string {
+function resolveAgentCwd(config: ResolvedAgentestConfig, projectRoot: string): string {
   const agentInvocation = resolveAgentInvocation(config.agent);
   if (agentInvocation.cwd) {
     return path.resolve(projectRoot, agentInvocation.cwd);
@@ -128,7 +128,7 @@ function resolveAgentCwd(config: AgentestConfig, projectRoot: string): string {
   return projectRoot;
 }
 
-async function checkAgentCommand(checks: DoctorCheck[], config: AgentestConfig, projectRoot: string): Promise<void> {
+async function checkAgentCommand(checks: DoctorCheck[], config: ResolvedAgentestConfig, projectRoot: string): Promise<void> {
   const agentInvocation = resolveAgentInvocation(config.agent);
   const agentCwd = resolveAgentCwd(config, projectRoot);
   const resolvedAgent = await locateCommand(agentInvocation.command, agentCwd);
@@ -208,7 +208,7 @@ async function checkAgentCommand(checks: DoctorCheck[], config: AgentestConfig, 
   });
 }
 
-async function checkMockServer(checks: DoctorCheck[], config?: AgentestConfig): Promise<void> {
+async function checkMockServer(checks: DoctorCheck[], config?: ResolvedAgentestConfig): Promise<void> {
   const runtimeDir = await mkdtemp(path.join(os.tmpdir(), 'agentest-doctor-'));
   const stateFilePath = path.join(runtimeDir, 'mock-state.json');
   const traceFilePath = path.join(runtimeDir, 'trace.json');
@@ -276,7 +276,7 @@ export async function doctor(options: DoctorCliOptions = {}): Promise<DoctorRepo
 
   const configResolution = await tryResolveConfigPath(options.configPath);
   let configPath = configResolution.configReference?.configPath;
-  let config: AgentestConfig | undefined;
+  let config: ResolvedAgentestConfig | undefined;
   let projectRoot: string | undefined;
 
   if (!configPath) {

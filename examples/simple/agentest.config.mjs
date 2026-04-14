@@ -48,7 +48,7 @@ export default defineConfig({
     }),
   ],
   test: {
-    files: ['./tests/**/*.agent.test.mjs'],
+    files: ['./tests/**/*.agent.test.mjs', './tests/**/*.agentest.yaml'],
     timeoutMs: 10_000,
     failOnUnmockedTool: true,
     stability: {

@@ -5,8 +5,9 @@ import {
   loadConfig,
   resolveConfigReference,
 } from '../config/load-config.js';
+import { isYamlTestFile, runPromptSpec } from '../spec/run-spec.js';
 import type { AgentTestDefinition } from '../api.js';
-import type { AgentestConfig } from '../types.js';
+import type { ResolvedAgentestConfig } from '../types.js';
 
 export interface RunCliOptions {
   configPath?: string;
@@ -37,8 +38,8 @@ async function loadTests(filePath: string): Promise<AgentTestDefinition[]> {
   return values.filter((value): value is AgentTestDefinition => value?.kind === 'agentest/test');
 }
 
-async function runSingleTest(options: {
-  config: AgentestConfig;
+async function runSingleJsTest(options: {
+  config: ResolvedAgentestConfig;
   projectRoot: string;
   testDefinition: AgentTestDefinition;
 }): Promise<TestRunSummary> {
@@ -103,15 +104,33 @@ export async function run(options: RunCliOptions = {}): Promise<SuiteSummary> {
   const files = await discoverTestFiles(projectRoot, config, options.patterns ?? []);
 
   if (files.length === 0) {
-    throw new Error('No agent tests were found.');
+    const configuredPatterns = (options.patterns?.length ?? 0) > 0
+      ? options.patterns!
+      : config.test?.files ?? [];
+    const patternText = configuredPatterns.length > 0
+      ? configuredPatterns.join(', ')
+      : 'default patterns for *.agent.test.* and *.agentest.yaml';
+
+    throw new Error(
+      `No agent tests were found for ${configReference.configPath}. Checked patterns: ${patternText}. Add a test file such as tests/example.agentest.yaml or configure test.files.`,
+    );
   }
 
   const summaries: TestRunSummary[] = [];
   for (const filePath of files) {
+    if (isYamlTestFile(filePath)) {
+      summaries.push(await runPromptSpec({
+        filePath,
+        config,
+        projectRoot,
+      }));
+      continue;
+    }
+
     const tests = await loadTests(filePath);
     for (const testDefinition of tests) {
       summaries.push(
-        await runSingleTest({
+        await runSingleJsTest({
           config,
           projectRoot,
           testDefinition,

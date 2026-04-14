@@ -7,9 +7,9 @@ import { serializeMatcher } from '../matchers.js';
 import { RunResult } from '../result.js';
 import { resolveAgentInvocation } from './resolve-agent.js';
 import type {
-  AgentestConfig,
   AgentProcessSnapshot,
   MockServerState,
+  ResolvedAgentestConfig,
   ToolStubDefinition,
   TraceEntry,
 } from '../types.js';
@@ -135,7 +135,7 @@ export class AgentTestContext {
   private promptText = '';
 
   constructor(
-    private readonly config: AgentestConfig,
+    private readonly config: ResolvedAgentestConfig,
     private readonly projectRoot: string,
     private readonly timeoutMs: number,
     private readonly failOnUnmockedTool: boolean,
@@ -148,7 +148,10 @@ export class AgentTestContext {
   mock(toolName: string): ToolMockBuilder {
     const toolExists = this.config.tools.some((toolDefinition) => toolDefinition.name === toolName);
     if (!toolExists) {
-      throw new Error(`Cannot mock unknown tool "${toolName}".`);
+      const availableTools = this.config.tools.map((toolDefinition) => toolDefinition.name).join(', ');
+      throw new Error(
+        `Cannot mock unknown tool "${toolName}". Declared tools: ${availableTools || '(none)'}. You can declare tools as strings, for example tools: ['${toolName}'].`,
+      );
     }
 
     return new ToolMockBuilder(this, toolName);

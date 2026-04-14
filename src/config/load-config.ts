@@ -1,12 +1,19 @@
 import path from 'node:path';
 import { access, readFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
 import { glob } from 'tinyglobby';
-import type { AgentestConfig } from '../types.js';
+import { importModuleDefault } from '../platform/load-module.js';
+import type {
+  AgentestConfig,
+  ResolvedAgentestConfig,
+  ToolConfigInput,
+  ToolDefinition,
+} from '../types.js';
 
 export const DEFAULT_TEST_PATTERNS = [
   'tests/**/*.agent.test.{js,mjs,ts}',
   '**/*.agent.test.{js,mjs,ts}',
+  'tests/**/*.agentest.{yaml,yml}',
+  '**/*.agentest.{yaml,yml}',
 ];
 
 const DEFAULT_TEST_IGNORE = [
@@ -14,6 +21,12 @@ const DEFAULT_TEST_IGNORE = [
   '**/dist/**',
   '**/.git/**',
 ];
+
+const DEFAULT_TOOL_INPUT_SCHEMA = {
+  type: 'object',
+  properties: {},
+  additionalProperties: true,
+};
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
@@ -38,6 +51,10 @@ interface PackageJsonWithAgentest {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function isToolDefinitionInput(value: unknown): value is Exclude<ToolConfigInput, string> {
+  return isPlainObject(value) && typeof value.name === 'string';
 }
 
 function asFileReference(filePath: string): ResolvedConfigReference {
@@ -129,33 +146,53 @@ export async function tryResolveConfigPath(explicitPath?: string): Promise<Confi
 }
 
 export async function importDefaultModule<T>(filePath: string): Promise<T> {
-  try {
-    const module = await import(pathToFileURL(filePath).href);
-    return module.default as T;
-  } catch (error) {
-    if (path.extname(filePath) === '.ts') {
-      throw new Error(
-        `Failed to load ${filePath}. TypeScript config/test files require running through a TypeScript loader such as tsx.`,
-      );
-    }
-
-    throw error;
-  }
+  return importModuleDefault<T>(filePath);
 }
 
 export async function resolveConfigPath(explicitPath?: string): Promise<string> {
   return (await resolveConfigReference(explicitPath)).configPath;
 }
 
+function normalizeToolDefinition(tool: ToolConfigInput, configPath: string, index: number): ToolDefinition {
+  if (typeof tool === 'string') {
+    return {
+      name: tool,
+      description: `Tool ${tool}`,
+      inputSchema: DEFAULT_TOOL_INPUT_SCHEMA,
+    };
+  }
+
+  if (!isToolDefinitionInput(tool)) {
+    throw new Error(
+      `Invalid tool definition at ${configPath} (tools[${index}]). Tools may be strings like "read_file" or objects with a string "name" field.`,
+    );
+  }
+
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: isPlainObject(tool.inputSchema) ? tool.inputSchema : DEFAULT_TOOL_INPUT_SCHEMA,
+  };
+}
+
+function normalizeConfig(config: AgentestConfig, configPath: string): ResolvedAgentestConfig {
+  return {
+    ...config,
+    tools: config.tools.map((tool, index) => normalizeToolDefinition(tool, configPath, index)),
+  };
+}
+
 function validateConfig(config: unknown, configPath: string): AgentestConfig {
   if (!isPlainObject(config) || !config.agent || !Array.isArray(config.tools)) {
-    throw new Error(`Invalid agentest config at ${configPath}.`);
+    throw new Error(
+      `Invalid agentest config at ${configPath}. Expected an object with "agent" and "tools". Add package.json#agentest or create agentest.config.ts/mjs.`,
+    );
   }
 
   return config as unknown as AgentestConfig;
 }
 
-export async function loadConfig(configSource: string | ResolvedConfigReference): Promise<AgentestConfig> {
+export async function loadConfig(configSource: string | ResolvedConfigReference): Promise<ResolvedAgentestConfig> {
   const configReference = typeof configSource === 'string'
     ? asFileReference(configSource)
     : configSource;
@@ -166,7 +203,7 @@ export async function loadConfig(configSource: string | ResolvedConfigReference)
     }
 
     const packageJson = await readPackageJson(configReference.packageJsonPath);
-    return validateConfig(packageJson.agentest, configReference.configPath);
+    return normalizeConfig(validateConfig(packageJson.agentest, configReference.configPath), configReference.configPath);
   }
 
   if (!configReference.filePath) {
@@ -174,12 +211,12 @@ export async function loadConfig(configSource: string | ResolvedConfigReference)
   }
 
   const config = await importDefaultModule<AgentestConfig>(configReference.filePath);
-  return validateConfig(config, configReference.configPath);
+  return normalizeConfig(validateConfig(config, configReference.configPath), configReference.configPath);
 }
 
 export async function discoverTestFiles(
   projectRoot: string,
-  config: AgentestConfig,
+  config: ResolvedAgentestConfig,
   patterns: string[],
 ): Promise<string[]> {
   const configuredPatterns = patterns.length > 0 ? patterns : config.test?.files ?? DEFAULT_TEST_PATTERNS;

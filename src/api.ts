@@ -1,5 +1,5 @@
 import type { AgentTestContext } from './runner/test-context.js';
-import type { AgentestConfig, AgentTestOptions, ToolDefinition } from './types.js';
+import type { AgentestConfig, AgentTestOptions, ToolDefinitionInput } from './types.js';
 
 export interface AgentTestDefinition {
   kind: 'agentest/test';
@@ -12,7 +12,7 @@ export function defineConfig<T extends AgentestConfig>(config: T): T {
   return config;
 }
 
-export function tool<T extends ToolDefinition>(definition: T): T {
+export function tool<T extends ToolDefinitionInput>(definition: T): T {
   return definition;
 }
 

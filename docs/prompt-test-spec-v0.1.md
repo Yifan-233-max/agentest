@@ -138,7 +138,7 @@ Used by `agentest run --tag <name>`.
 ### `agent`
 
 Optional.
-Overrides the default preset from `.agentest/config.json` when needed.
+Overrides the default preset from the resolved project config when needed.
 
 Supported fields:
 
@@ -181,6 +181,13 @@ promptSource:
 Imports a module and calls an exported function.
 This is the preferred shape for prompt-as-code projects.
 
+Current implementation note:
+`agentest run` supports both JavaScript and TypeScript module refs.
+The exported value can be either:
+
+- a function, which will be invoked with `args`
+- a plain exported value, when `args` is omitted
+
 Example:
 
 ```yaml
@@ -218,7 +225,7 @@ Fields:
 - `stability.runs`
 - `stability.minPassRate`
 
-If omitted, values come from `.agentest/config.json`.
+If omitted, values come from the resolved project config.
 
 ## `mocks`
 

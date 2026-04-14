@@ -1,0 +1,6 @@
+{
+  "name": "agentest-consumer-demo",
+  "private": true,
+  "type": "module",
+  "agentest": "./agentest.config.ts"
+}

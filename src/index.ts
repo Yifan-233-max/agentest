@@ -11,10 +11,13 @@ export type {
   AgentRunSnapshot,
   AgentTestOptions,
   AgentPresetName,
+  ResolvedAgentestConfig,
   ClaudeAgentPresetConfig,
   CopilotAgentPresetConfig,
   CustomAgentCommandConfig,
   TestConfig,
+  ToolConfigInput,
   ToolDefinition,
+  ToolDefinitionInput,
   TraceEntry,
 } from './types.js';

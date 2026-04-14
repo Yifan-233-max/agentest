@@ -18,10 +18,12 @@
     "build": "tsc -p tsconfig.json",
     "doctor:example": "npm run build && node ./dist/cli.js doctor --config ./examples/simple/agentest.config.mjs",
     "init:example": "npm run build && node ./dist/cli.js init --cwd ./examples/simple",
+    "run:consumer": "npm run build && cd examples/consumer && node ../../dist/cli.js run",
     "run:embedded": "npm run build && node ./dist/cli.js run",
     "run:example": "npm run build && node ./dist/cli.js run --config ./examples/simple/agentest.config.mjs",
     "run:claude:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/claude.config.mjs",
     "run:copilot:e2e": "npm run build && node ./dist/cli.js run --config ./examples/presets/copilot.config.mjs",
+    "smoke:pack-install": "npm run build && node ./scripts/smoke-pack-install.mjs",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "keywords": [
@@ -34,11 +36,12 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "tinyglobby": "^0.2.12"
+    "tinyglobby": "^0.2.12",
+    "tsx": "^4.19.3",
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
 }

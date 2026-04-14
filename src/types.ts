@@ -4,6 +4,14 @@ export interface ToolDefinition {
   inputSchema: Record<string, unknown>;
 }
 
+export interface ToolDefinitionInput {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+export type ToolConfigInput = string | ToolDefinitionInput;
+
 export type AgentPresetName = 'custom' | 'claude' | 'copilot';
 
 interface BaseAgentConfig {
@@ -48,8 +56,12 @@ export interface TestConfig {
 
 export interface AgentestConfig {
   agent: AgentCommandConfig;
-  tools: ToolDefinition[];
+  tools: ToolConfigInput[];
   test?: TestConfig;
+}
+
+export interface ResolvedAgentestConfig extends Omit<AgentestConfig, 'tools'> {
+  tools: ToolDefinition[];
 }
 
 export interface ReturnStubAction {
