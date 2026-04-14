@@ -4,6 +4,17 @@ This file is for AI coding agents. It tells you how to set up and operate `agent
 
 **Your role:** You do all the work. The user only reviews your proposals and receives results. The user should never need to type a command or learn the config schema.
 
+## Bootstrap From An Installed Package
+
+Start from the user's repository, not from memory.
+
+1. First check whether `agentest` is already available in the repo.
+2. If it is not installed and automatic setup is appropriate, install `agentest` with the repo's existing package manager.
+3. Once `agentest` is available, resolve `agentest/agent-kit/manifest.json`.
+4. Use that manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
+
+Use the manifest to discover local packaged assets such as `README.md`, `AGENTS.md`, `docs/usage.md`, `docs/minimal-template.md`, and example material. This file remains the operating protocol; the manifest is the discovery entrypoint.
+
 ## What agentest Does
 
 `agentest` tests AI CLI workflows by replacing the MCP tool layer with mocks.
@@ -19,11 +30,22 @@ The prompt, the AI CLI, and the prompt source files stay the same. Only the tool
 
 Follow these four phases in order. Each phase has a clear boundary — you either work autonomously or pause for user review.
 
+Manifest discovery happens before or at the start of investigation. If `agentest` is available, resolve `agentest/agent-kit/manifest.json` first so you can inspect the packaged local guidance before designing the test flow.
+
 ---
 
 ### Phase 1: Investigate (you work alone)
 
 Do not ask the user questions yet. Inspect the repository silently and gather everything you need.
+
+**1.0 Bootstrap local guidance**
+
+- Check whether `agentest` is already present in the repo.
+- If not present and automatic setup is appropriate, install it with the repo's package manager.
+- Resolve `agentest/agent-kit/manifest.json`.
+- Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
+
+Do this before you decide how to wire config, specs, mocks, or assertions.
 
 **1.1 Detect the agent runtime**
 
@@ -104,13 +126,15 @@ If the user requests changes, revise the design and present again.
 
 Once the user approves, do everything:
 
-**3.1 Install agentest**
+**3.1 Ensure `agentest` is available**
 
 ```bash
 npm i -D agentest
 ```
 
-Use the repo's package manager if it is not npm.
+Use the repo's package manager if it is not npm. If `agentest` is already installed, do not reinstall it just to continue.
+
+Do not write files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2.
 
 **3.2 Add config**
 
