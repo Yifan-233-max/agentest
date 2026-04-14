@@ -16,8 +16,6 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "doctor:example": "npm run build && node ./dist/cli.js doctor --config ./examples/simple/agentest.config.mjs",
-    "init:example": "npm run build && node ./dist/cli.js init --cwd ./examples/simple",
     "run:consumer": "npm run build && cd examples/consumer && node ../../dist/cli.js run",
     "run:embedded": "npm run build && node ./dist/cli.js run",
     "run:example": "npm run build && node ./dist/cli.js run --config ./examples/simple/agentest.config.mjs",

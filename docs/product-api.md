@@ -21,7 +21,7 @@ agentest should have three layers:
 
 - engine layer: mock MCP server, runner, assertions, presets, traces
 - embedded layer: config discovery, prompt binding, colocated specs, `run`
-- product layer: `create`, `flow`, `run --chaos`, `explain`, `doctor`, optional `init`
+- product layer: `create`, `flow`, `run --chaos`, `explain`
 
 The embedded layer makes the system executable inside a normal repository.
 The product layer makes it usable in an AI-first workflow.
@@ -274,48 +274,6 @@ Likely cause: the prompt does not strongly constrain the terminal write action
 Suggested fix: add an explicit completion rule and require replace_string_in_file in the contract
 ```
 
-### `agentest doctor`
-
-Purpose:
-Diagnose environment and integration issues.
-
-Checks should include:
-
-- Node version
-- agentest config presence
-- presence of tests
-- presence of target agent CLI
-- ability to invoke the selected CLI
-- ability to boot the mock MCP server
-- ability to resolve configured prompt sources
-
-Suggested flags:
-
-- `--agent <claude|copilot|auto>`
-- `--format <human|json>`
-
-Example:
-
-```bash
-npx agentest doctor
-```
-
-### `agentest init`
-
-Purpose:
-Optional bootstrap command for projects that want workspace scanning and helper artifact setup.
-
-Important constraint:
-`init` should not become the main story.
-It supports the AI-native flow, but the key value should still come from `create`, `flow`, and `run --chaos`.
-
-Primary responsibilities:
-
-- detect prompt sources
-- detect likely tools and agent runtimes
-- create `.agentest/cache/` and optional skill placeholders
-- recommend the next `create` command
-
 ## Recommended Delivery Order
 
 1. keep embedded config discovery and YAML execution stable
@@ -323,7 +281,6 @@ Primary responsibilities:
 3. add `flow` visualization output
 4. add `run --chaos` profiles and reporting
 5. improve `explain` around chaos drift
-6. continue refining `doctor` and optional `init`
 
 Reasoning:
 

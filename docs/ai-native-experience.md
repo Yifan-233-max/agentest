@@ -208,5 +208,4 @@ npx agentest run --chaos light
 npx agentest explain --latest
 ```
 
-`init` and `doctor` still matter, but they are support commands.
-They should not define the product story.
+The core story should stay focused on `create`, `flow`, `run`, and later `explain` plus chaos evaluation.

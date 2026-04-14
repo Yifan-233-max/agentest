@@ -472,14 +472,13 @@ That means the highest-priority path is:
 3. bind tests to real prompt sources instead of duplicating prompt text
 4. keep helper commands optional
 
-The product-layer commands still matter, but they are now secondary to the embedded path:
+The current product-layer command surface is:
 
-- `agentest init`
-- `agentest connect <agent>`
 - `agentest create`
+- `agentest flow`
 - `agentest run`
-- `agentest explain`
-- `agentest doctor`
+- future: `agentest explain`
+- future: `agentest run --chaos`
 
 The product workflow spec is in [docs/product-api.md](docs/product-api.md), and the first structured prompt test format is in [docs/prompt-test-spec-v0.1.md](docs/prompt-test-spec-v0.1.md).
 
