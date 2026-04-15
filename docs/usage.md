@@ -14,7 +14,7 @@ This guide is for teams who already know they want to use `agentest` and want th
    - propose the first flow for review
    - wait for approval before writing files or running tests
 
-If `agentest` is missing, the AI should tell the user to run `npm i -D agentest` first. It should not guess pnpm, yarn, GitHub clone flows, or silent auto-install behavior for this journey.
+This journey always starts with `npm i -D agentest`, and the AI should not guess pnpm, yarn, GitHub clone flows, or silent auto-install behavior.
 
 ## The Direct Manual Path
 
