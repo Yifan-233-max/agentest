@@ -90,7 +90,7 @@ The AI agent should:
 - run the validation
 - report the outcome in user language
 
-If `agentest` is missing, the AI should tell the user to run `npm i -D agentest` first rather than trying to guess another install path.
+If `agentest` is missing, the AI should say: Please run `npm i -D agentest` first. Do not try to guess another install path.
 
 ## What The Agent Can Use Today
 

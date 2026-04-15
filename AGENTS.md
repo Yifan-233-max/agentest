@@ -10,7 +10,7 @@ Start from the user's repository, not from memory.
 
 1. First check whether `agentest` is already available in the repo.
 2. If it is installed, resolve `agentest/agent-kit/manifest.json`.
-3. If it is not installed, stop and tell the user to run `npm i -D agentest`.
+3. If it is not installed, stop and tell the user: Please run `npm i -D agentest` first.
 4. Once `agentest` is available, use the manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
 
 Do not guess another package manager or install path in this journey.
@@ -41,7 +41,7 @@ Do not ask the user questions yet. Inspect the repository silently and gather ev
 **1.0 Bootstrap local guidance**
 
 - Check whether `agentest` is already present in the repo.
-- If it is missing, reply with: "This repository does not have `agentest` installed yet. Please run `npm i -D agentest`, then I can take over the rest of the workflow."
+- If it is missing, reply with: "This repository does not have `agentest` installed yet. Please run `npm i -D agentest` first, then I can take over the rest of the workflow."
 - Resolve `agentest/agent-kit/manifest.json` only after the package is present.
 - Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
 
@@ -129,7 +129,7 @@ Once the user approves, do everything:
 **3.1 Ensure `agentest` is available**
 
 If `agentest` is already installed, continue.
-If it is missing, stop and ask the user to install it with `npm i -D agentest` before proceeding.
+If it is missing, stop and ask the user to install it. Please run `npm i -D agentest` first.
 
 Do not write project-specific config/spec files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2.
 
