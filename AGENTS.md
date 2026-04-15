@@ -9,12 +9,11 @@ This file is for AI coding agents. It tells you how to set up and operate `agent
 Start from the user's repository, not from memory.
 
 1. First check whether `agentest` is already available in the repo.
-2. If it is not installed and automatic setup is appropriate, install `agentest` with the repo's existing package manager.
-3. Once `agentest` is available, resolve `agentest/agent-kit/manifest.json`.
-4. Use that manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
+2. If it is installed, resolve `agentest/agent-kit/manifest.json`.
+3. If it is not installed, stop and tell the user to run `npm i -D agentest`.
+4. Once `agentest` is available, use the manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
 
-Use the manifest to discover local packaged assets such as `README.md`, `AGENTS.md`, `docs/usage.md`, `docs/minimal-template.md`, and example material. This file remains the operating protocol; the manifest is the discovery entrypoint.
-Bootstrap installation is the only allowed pre-review write. Use it only to make the packaged guidance locally available. Do not write config files, test specs, or run `agentest` commands until after the user approves the proposed flow.
+Do not guess another package manager or install path in this journey.
 
 ## What agentest Does
 
@@ -42,8 +41,8 @@ Do not ask the user questions yet. Inspect the repository silently and gather ev
 **1.0 Bootstrap local guidance**
 
 - Check whether `agentest` is already present in the repo.
-- If not present and automatic setup is appropriate, install it with the repo's package manager.
-- Resolve `agentest/agent-kit/manifest.json`.
+- If it is missing, reply with: "This repository does not have `agentest` installed yet. Please run `npm i -D agentest`, then I can take over the rest of the workflow."
+- Resolve `agentest/agent-kit/manifest.json` only after the package is present.
 - Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
 
 Do this before you decide how to wire config, specs, mocks, or assertions. If installation is required, treat it only as bootstrap so the local guidance can be inspected before the review step.
@@ -129,13 +128,10 @@ Once the user approves, do everything:
 
 **3.1 Ensure `agentest` is available**
 
-```bash
-npm i -D agentest
-```
+If `agentest` is already installed, continue.
+If it is missing, stop and ask the user to install it with `npm i -D agentest` before proceeding.
 
-Use the repo's package manager if it is not npm. If `agentest` is already installed, do not reinstall it just to continue.
-
-Do not write project-specific config/spec files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2. Bootstrap installation in Phase 1 is the only exception.
+Do not write project-specific config/spec files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2.
 
 **3.2 Add config**
 
