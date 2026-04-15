@@ -45,7 +45,7 @@ Do not ask the user questions yet. Inspect the repository silently and gather ev
 - Resolve `agentest/agent-kit/manifest.json` only after the package is present.
 - Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
 
-Do this before you decide how to wire config, specs, mocks, or assertions. If installation is required, treat it only as bootstrap so the local guidance can be inspected before the review step.
+Do this before you decide how to wire config, specs, mocks, or assertions.
 
 **1.1 Detect the agent runtime**
 
