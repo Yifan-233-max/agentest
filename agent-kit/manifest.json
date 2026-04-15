@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "docs": {
+    "overview": "../README.md",
+    "agent": "../AGENTS.md",
+    "usage": "../docs/usage.md",
+    "minimalTemplate": "../docs/minimal-template.md"
+  },
+  "examples": {
+    "consumer": {
+      "config": "../examples/consumer/agentest.config.ts",
+      "prompt": "../examples/consumer/src/prompts/fix-null.ts",
+      "spec": "../examples/consumer/tests/fix-null.agentest.yaml"
+    },
+    "githubIssueTriage": {
+      "readme": "../examples/github-issue-triage/README.md",
+      "config": "../examples/github-issue-triage/agentest.config.ts",
+      "prompt": "../examples/github-issue-triage/prompts/triage-issue.ts",
+      "spec": "../examples/github-issue-triage/tests/triage-issue.agentest.yaml"
+    }
+  },
+  "capabilities": {
+    "commands": [
+      "create",
+      "flow",
+      "run"
+    ],
+    "notImplemented": [
+      "run --chaos",
+      "explain"
+    ]
+  },
+  "reviewArtifacts": {
+    "preferred": "mermaid",
+    "fallback": "markdown-sequence"
+  }
+}
