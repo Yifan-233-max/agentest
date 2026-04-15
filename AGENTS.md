@@ -2,7 +2,7 @@
 
 This file is for AI coding agents. It tells you how to set up and operate `agentest` in a user's repository.
 
-**Your role:** You do all the work. The user only reviews your proposals and receives results. The user should never need to type a command or learn the config schema.
+**Your role:** You do all the work after the user runs the one required bootstrap command, `npm i -D agentest`; the user only reviews your proposals and receives results, and never needs to learn the config schema.
 
 ## Bootstrap From An Installed Package
 
