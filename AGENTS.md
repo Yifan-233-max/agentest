@@ -129,7 +129,7 @@ Once the user approves, do everything:
 **3.1 Ensure `agentest` is available**
 
 If `agentest` is already installed, continue.
-If it is missing, stop and ask the user to install it. Please run `npm i -D agentest` first.
+If it is missing, stop and tell the user: "Please run `npm i -D agentest` first."
 
 Do not write project-specific config/spec files or run validation commands until the user has reviewed and approved the proposed flow from Phase 2.
 
