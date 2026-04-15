@@ -1,44 +1,26 @@
 # Usage Guide
 
-This guide is for teams who want to add agentest to an existing prompt-driven repository and start testing with the smallest practical setup.
+This guide is for teams who already know they want to use `agentest` and want the smallest reliable bootstrap path.
 
-The primary product story is:
+## Quick Start
 
-1. tell your AI coding agent what workflow to test
-2. let the agent check whether `agentest` is already installed
-3. if it is missing, let the agent install it
-4. let the agent inspect the local guidance bundle exposed at `agentest/agent-kit/manifest.json`
-5. review the proposed flow
-6. after approval, let the agent write config/spec files and run the test
+1. run `npm i -D agentest`
 
-## The Intended User Path
+2. tell your AI agent: `Use agentest to test this workflow.`
 
-If you want to drive the setup manually, the current direct path is:
+3. let the AI agent:
+   - resolve `agentest/agent-kit/manifest.json`
+   - inspect the repo
+   - propose the first flow for review
+   - wait for approval before writing files or running tests
 
-```bash
-npm i -D agentest
-npx agentest run
-```
+This journey always starts with `npm i -D agentest`. If you skipped bootstrap and the package is missing, you should see: "Please run `npm i -D agentest` first." The AI should not guess pnpm, yarn, GitHub clone flows, or silent auto-install behavior.
 
-For that to work, your repository needs three small pieces:
+## The Direct Manual Path
 
-1. `package.json#agentest`
-2. `agentest.config.ts`
-3. one or more `*.agentest.yaml` specs
+If you want to drive setup and execution by hand after installation, the current direct path is:
 
-If you do not want to hand-write the first spec, the current direct AI-assisted path is:
-
-```bash
-npx agentest create "Test the checkout fix workflow"
-npx agentest flow tests/checkout-fix.agentest.yaml
-```
-
-Current limits:
-
-- `create` currently generates YAML only
-- `flow` currently visualizes YAML specs only
-
-Both commands are intentionally minimal first versions.
+`npx agentest run`
 
 ## Minimal Setup
 
