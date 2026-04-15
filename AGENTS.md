@@ -41,7 +41,7 @@ Do not ask the user questions yet. Inspect the repository silently and gather ev
 **1.0 Bootstrap local guidance**
 
 - Check whether `agentest` is already present in the repo.
-- If it is missing, reply with: "This repository does not have `agentest` installed yet. Please run `npm i -D agentest` first, then I can take over the rest of the workflow."
+- If it is missing, reply with: "Please run `npm i -D agentest` first."
 - Resolve `agentest/agent-kit/manifest.json` only after the package is present.
 - Use the manifest to find the local packaged overview, this protocol, usage docs, minimal template, and examples.
 
