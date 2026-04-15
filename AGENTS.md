@@ -10,7 +10,7 @@ Start from the user's repository, not from memory.
 
 1. First check whether `agentest` is already available in the repo.
 2. If it is installed, resolve `agentest/agent-kit/manifest.json`.
-3. If it is not installed, stop and tell the user: Please run `npm i -D agentest` first.
+3. If it is not installed, stop and tell the user: "Please run `npm i -D agentest` first."
 4. Once `agentest` is available, use the manifest as the stable local entrypoint for the packaged overview docs, agent guidance, usage docs, minimal template, and examples.
 
 Do not guess another package manager or install path in this journey.
