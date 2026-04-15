@@ -6,7 +6,7 @@ Test AI CLI workflows like unit tests.
 You run the same prompt against the same CLI, but in test mode the MCP tool layer is replaced with mocked MCP tools that are traced and checked.
 
 You do not need to clone the `agentest` source repo to adopt it.
-The intended path is package-first: your AI agent can install `agentest`, discover the bundled local guidance at `agentest/agent-kit/manifest.json`, and bootstrap the first test flow from there.
+The intended path is package-first: you run `npm i -D agentest`, then your AI agent discovers the bundled local guidance at `agentest/agent-kit/manifest.json` and bootstraps the first test flow from there.
 
 ## Why It Matters
 
@@ -56,15 +56,14 @@ prompt -> AI CLI -> agentest mock MCP -> injected responses + trace + assertions
 
 The intended user experience is simple:
 
-1. describe the workflow or scenario to test in natural language
-2. let the AI agent check whether `agentest` is already installed
-3. if it is missing, let the AI agent install it
-4. let the AI agent use the installed guidance bundle to discover the repo context and design the first test flow
-5. review the proposed flow
-6. approve the run and receive the result
+1. run `npm i -D agentest`
+2. describe the workflow or scenario to test in natural language
+3. let the AI agent use the installed guidance bundle to discover the repo context and design the first test flow
+4. review the proposed flow
+5. approve the run and receive the result
 
-The customer should not need to learn the config shape, clone this repo, or memorize CLI commands before getting value.
-Setup, test design, config generation, flow review, execution, and result reporting should all be handled by an AI coding agent.
+The customer should not need to learn the config shape, clone this repo, or memorize more than one bootstrap command before getting value.
+Setup after installation, test design, config generation, flow review, execution, and result reporting should all be handled by an AI coding agent.
 
 For adopters, the bootstrap guidance travels with the installed package.
 This repo's [AGENTS.md](AGENTS.md) remains the contributor-facing entry point for working on `agentest` itself.
@@ -72,12 +71,14 @@ This repo's [AGENTS.md](AGENTS.md) remains the contributor-facing entry point fo
 ## AI-Driven Workflow
 
 The main story is not "install a tool, read docs, then figure out the commands."
-The main story is "tell your AI agent what workflow to test."
+The main story is:
+
+1. run `npm i -D agentest`
+2. tell your AI agent what workflow to test
 
 The AI agent should:
 
 - check whether `agentest` is already installed in the repo environment
-- install `agentest` if it is missing
 - discover the installed local guidance bundle at `agentest/agent-kit/manifest.json`
 - find the existing AI CLI
 - find the real prompt source
@@ -89,13 +90,7 @@ The AI agent should:
 - run the validation
 - report the outcome in user language
 
-The user should only need to review the proposed flow and approve the run.
-
-If someone wants to install it manually first, that is still available:
-
-```bash
-npm i -D agentest
-```
+If `agentest` is missing, the AI should tell the user to run `npm i -D agentest` first rather than trying to guess another install path.
 
 ## What The Agent Can Use Today
 
